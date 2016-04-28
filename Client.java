@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.net.InetAddress;
 
-public class SenderTCPBaru {
+public class Client {
 	
 	protected String dstAddress;
 	protected int dstPort;
@@ -25,7 +25,7 @@ public class SenderTCPBaru {
 	protected JSONObject json;
 	protected String username;
 
-	public SenderTCPBaru(){
+	public Client(){
 		try {
 			dstAddress = "localhost";
 			IPAddress = InetAddress.getByName(dstAddress);
@@ -77,7 +77,7 @@ public class SenderTCPBaru {
 
 	public static void main(String args[]) throws Exception
 	{
-		SenderTCPBaru senderTCP = new SenderTCPBa();
+		Client senderTCP = new Client();
 		//senderTCP.setup();
 		senderTCP.joinGame();
 		senderTCP.disconnect();

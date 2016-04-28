@@ -1,4 +1,4 @@
-//import org.json.JSONObject;
+import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.net.InetAddress;
 
-public class ReceiverTCP {
+public class Server {
 	
 	protected static String dstAddress;
 	protected static int dstPort;
