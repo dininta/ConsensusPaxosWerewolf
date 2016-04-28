@@ -12,6 +12,7 @@ import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
+import java.util.*;
 import java.net.InetAddress;
 
 public class Client {
@@ -30,7 +31,6 @@ public class Client {
 			IPAddress = InetAddress.getByName(dstAddress);
 			dstPort = 9876;
 			socket = new Socket(dstAddress, dstPort);
-			System.out.println("Connecting...");
             System.out.println("Server has connected");
             out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);            
         } catch (UnknownHostException e) {
@@ -58,11 +58,12 @@ public class Client {
         // Send json
 	    System.out.println("Request: " + json.toString());
 	    out.println(json.toString());
+	    out.close();
 	}
 
 	public void disconnect(){
 		try {
-            out.close();
+            
 	        socket.close();
 	        
         } catch (IOException e) {e.printStackTrace();}
@@ -72,8 +73,17 @@ public class Client {
 	public static void main(String args[]) throws Exception
 	{
 		Client client = new Client();
-		client.joinGame();
+		System.out.print("Command: ");
+		Scanner sc = new Scanner(System.in);
+		String input = sc.nextLine();
+		while(!input.equals("quit")) {
+			if(input.equals("join"))
+				client.joinGame();
+			System.out.print("Command: ");
+			input = sc.nextLine();
+		}
 		client.disconnect();
+		
 		
 	}
 }
