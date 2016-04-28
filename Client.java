@@ -30,19 +30,14 @@ public class Client {
 			dstAddress = "localhost";
 			IPAddress = InetAddress.getByName(dstAddress);
 			dstPort = 9876;
-			serverSocket = new ServerSocket(dstPort);
+			socket = new Socket(dstAddress, dstPort);
 			System.out.println("Connecting...");
-            socket = serverSocket.accept();
             System.out.println("Server has connected");
             out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);            
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            if (socket != null) {
-                disconnect();
-            }
         }
 	}
 
@@ -70,7 +65,7 @@ public class Client {
 		try {
             out.close();
 	        socket.close();
-	        serverSocket.close();
+	        
         } catch (IOException e) {e.printStackTrace();}
 		
 	}

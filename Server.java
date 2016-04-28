@@ -25,28 +25,27 @@ public class Server {
 
 	public static void main(String args[]) throws Exception
 	{
-		Socket socket = null;
+		ServerSocket serverSocket = null;
+        Socket clientSocket = null;
 		BufferedReader in;
 		dstAddress = "localhost";
 		IPAddress = InetAddress.getByName(dstAddress);
 		dstPort = 9876;
-		//JSONObject json;
+
 		try {
-            socket = new Socket(dstAddress, dstPort);
+            serverSocket = new ServerSocket(dstPort);
             System.out.println("Connecting...");
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            clientSocket = serverSocket.accept();
+            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             int c;
             response = "";
             while((c=in.read())!=-1){
                 response+=(char)c;
             }
-            //json = new JSONObject();
-            //json.put("method", "join");
-            //json.put("username", "cantik");
             System.out.println("Response: " + response);
             in.close();
-            socket.close();
-        //} catch(org.json.JSONException e){
+            clientSocket.close();
+            serverSocket.close();
         } catch (UnknownHostException e) {
             e.printStackTrace();
             response = "UnknownHostException: " + e.toString();
@@ -54,9 +53,9 @@ public class Server {
             e.printStackTrace();
             response = "IOException: " + e.toString();
         } finally {
-            if (socket != null) {
+            if (clientSocket != null) {
                 try {
-                    socket.close();
+                    clientSocket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
