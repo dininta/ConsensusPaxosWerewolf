@@ -19,24 +19,31 @@ public class Server {
 	protected static String dstAddress;
 	protected static int dstPort;
 	protected static InetAddress IPAddress;
-	protected static String request;
-	protected static String response;
+	protected String response;
+    protected ServerSocket serverSocket = null;
+    protected Socket clientSocket = null;
+    protected BufferedReader in;
 
-
-	public static void main(String args[]) throws Exception
-	{
-		ServerSocket serverSocket = null;
-        Socket clientSocket = null;
-		BufferedReader in;
-		dstAddress = "localhost";
-		IPAddress = InetAddress.getByName(dstAddress);
-		dstPort = 9876;
-
-		try {
+    public Server(){
+        try {
+            dstAddress = "localhost";
+            IPAddress = InetAddress.getByName(dstAddress);
+            dstPort = 9876;
             serverSocket = new ServerSocket(dstPort);
             System.out.println("Connecting...");
-            clientSocket = serverSocket.accept();
+             clientSocket = serverSocket.accept();
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+            response = "UnknownHostException: " + e.toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+            response = "IOException: " + e.toString();
+        }
+    }
+
+    public void readResponse(){
+        try{
             int c;
             response = "";
             while((c=in.read())!=-1){
@@ -46,20 +53,25 @@ public class Server {
             in.close();
             clientSocket.close();
             serverSocket.close();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-            response = "UnknownHostException: " + e.toString();
         } catch (IOException e) {
             e.printStackTrace();
             response = "IOException: " + e.toString();
-        } finally {
-            if (clientSocket != null) {
-                try {
-                    clientSocket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
+    }
+
+    public void disconnect(){
+        try {
+            serverSocket.close();
+            if(clientSocket!=null)
+                clientSocket.close();
+        } catch (IOException e) {e.printStackTrace();}
+
+    }
+	public static void main(String args[]) throws Exception
+	{
+	   Server server = new Server();
+       server.readResponse();
+       server.disconnect();         
+       
 	}
 }

@@ -19,7 +19,6 @@ public class Client {
 	protected String dstAddress;
 	protected int dstPort;
 	protected InetAddress IPAddress;
-	protected ServerSocket serverSocket = null;
 	protected Socket socket = null;
 	protected PrintWriter out;
 	protected JSONObject json;
@@ -72,10 +71,9 @@ public class Client {
 
 	public static void main(String args[]) throws Exception
 	{
-		Client senderTCP = new Client();
-		//senderTCP.setup();
-		senderTCP.joinGame();
-		senderTCP.disconnect();
+		Client client = new Client();
+		client.joinGame();
+		client.disconnect();
 		
 	}
 }
