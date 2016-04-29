@@ -14,6 +14,36 @@ import java.util.*;
 import java.net.InetAddress;
 
 public class Client {
+
+	class Player {
+		public int playerId;
+		public int isAlive;
+		public String address;
+		public int port;
+		public String username;
+		public String role;
+
+		public Player(int playerId, int isAlive, String address, int port, String username) {
+			this.playerId = playerId;
+			this.isAlive = isAlive;
+			this.address = address;
+			this.port = port;
+			this.username = username;
+			this.role = "";
+		}
+		public Player(int playerId, int isAlive, String address, int port, String username, String role) {
+			this.playerId = playerId;
+			this.isAlive = isAlive;
+			this.address = address;
+			this.port = port;
+			this.username = username;
+			this.role = role;
+		}
+		public void print() {
+			System.out.println(playerId + ";" + isAlive+ ";" + address+ ";" + port+ ";" + username+ ";" + role);
+		}
+	}
+
 	// TCP
 	protected String dstAddress;
 	protected int dstPort;
@@ -34,8 +64,10 @@ public class Client {
 	protected String response;
     protected String username;
     protected int playerId;
+    protected ArrayList<Player> players;
 
 	public Client(){
+		players = new ArrayList<Player>();
 		try {
 			// UDP Socket
 			udpPort = 9999;
@@ -120,21 +152,51 @@ public class Client {
 		return 1;
 	}
 
-
-
-/*	public void getListClient() {
+	public void getListClient() {
 		// Send request
 		try{
 			jsonRequest = new JSONObject();
 	        jsonRequest.put("method", "client_address");
         } catch (org.json.JSONException e) {}
-	    out.println(json.toString());
+	    out.println(jsonRequest.toString());
 
 	    // Get server response
 	    readResponse();
-	    //String status = jsonResponse.getJSONObject("LabelData").getString("slogan");
+	    try {
+		    String status = jsonResponse.getString("status");
+		    if (status.equals("ok")) {
+		    	JSONArray clients = jsonResponse.getJSONArray("clients");
+		    	for (int i = 0; i < clients.length(); ++i) {
+				    JSONObject client = clients.getJSONObject(i);
+				    Player player;
+				    if (client.has("role"))
+				    	player = new Player (	client.getInt("player_id"),
+				    							client.getInt("is_alive"),
+				    							client.getString("address"),
+				    							client.getInt("port"),
+				    							client.getString("username"),
+				    							client.getString("role") );
+				    else
+				    	player = new Player (	client.getInt("player_id"),
+				    							client.getInt("is_alive"),
+				    							client.getString("address"),
+				    							client.getInt("port"),
+				    							client.getString("username") );
+				    players.add(player);
+				}
+
+				// Print players
+				System.out.println("List of players received");
+				for (int i=0; i<players.size(); i++) {
+					players.get(i).print();
+				}
+		    }
+		    else {
+		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
+			}
+		} catch (JSONException e) {}
 	    
-	}*/
+	}
 
 	public void readResponse(){
         try{
@@ -167,6 +229,8 @@ public class Client {
 	public static void main(String args[]) throws Exception
 	{
 		Client client = new Client();
+
+		// Client join the game
 		System.out.print("Command: ");
 		Scanner sc = new Scanner(System.in);
 		String input = sc.nextLine();
@@ -178,9 +242,22 @@ public class Client {
 		while (client.joinGame() != 0){ // if status != "ok" then repeat
 			// nothing
 		}
-		while (client.readyUp() != 0){ // if status != "ok" then repeat
+		/*while (client.readyUp() != 0){ // if status != "ok" then repeat
 			// nothing
+		}*/
+
+		// Get command from client
+		System.out.print("Command: ");
+		input = sc.nextLine();
+		while (!input.equals("quit")){ // if method != "join" then repeat
+			if (input.equals("client_address"))
+				client.getListClient();
+			else
+				System.out.println("Unknown command: " + input + "!!!");
+			System.out.print("Command: ");
+			input = sc.nextLine();
 		}
+
 		client.disconnect(0);
 	}
 }
