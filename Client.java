@@ -181,6 +181,6 @@ public class Client {
 		while (client.readyUp() != 0){ // if status != "ok" then repeat
 			// nothing
 		}
-		client.disconnect(0);
+		// client.disconnect(0);
 	}
 }

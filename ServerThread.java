@@ -16,6 +16,8 @@ import java.util.Calendar;
 import java.net.InetAddress;
 
 public class ServerThread extends Thread {
+    public static final int maxPlayer = 2;
+
 	protected static String dstAddress;
 	protected static int dstPort;
 	protected static InetAddress IPAddress;
@@ -52,6 +54,7 @@ public class ServerThread extends Thread {
         try{
 
             request = in.readLine();
+            System.out.println(player_id + " " + request);
             jsonRequest = new JSONObject(request);
             
             System.out.println("Request: " + request);
@@ -86,6 +89,9 @@ public class ServerThread extends Thread {
             else if(method.equals("client_address")) {
                 listClient();
             }
+            else if(method.equals("ready")) {
+                sendReadyResponse();
+            }
         }
     }
 
@@ -94,7 +100,7 @@ public class ServerThread extends Thread {
         try{
             //mengecek apakah player sudah 6 
             jsonResponse = new JSONObject();
-            if(Server.clients.size() < 6) {
+            if(Server.clients.size() < maxPlayer) {
                 String name = jsonRequest.getString("username");
                 //if username exists
                 if(Server.usernames.contains(name)) {
@@ -127,6 +133,23 @@ public class ServerThread extends Thread {
         } catch (org.json.JSONException e) {}
     }
 
+    //response for request ready
+    public void sendReadyResponse(){
+        //nunggu sampai semua jumlah player sudah mencapai max
+        
+        while(Server.clients.size() < maxPlayer);
+        System.out.println("Keluar!!!");
+        try{
+            jsonResponse = new JSONObject();
+            jsonResponse.put("status", "ok");
+            jsonResponse.put("description", "waiting for other player to start");
+
+            //kirim response
+            System.out.println("Sending response: " + jsonResponse.toString());
+            out.println(jsonResponse.toString());
+        } catch (org.json.JSONException e) {}
+    }
+
     //response for method list client
     public void listClient(){
         try{
@@ -145,7 +168,9 @@ public class ServerThread extends Thread {
             }
 
             //kirim response
+            jsonResponse.put("status", "ok");
             jsonResponse.put("clients", list);
+            jsonResponse.put("description", "list of clients retrieved");
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
          } catch (org.json.JSONException e) {}
