@@ -1,4 +1,5 @@
 import org.json.JSONObject;
+import org.json.JSONArray;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
@@ -23,9 +24,12 @@ public class ServerThread extends Thread {
 
     protected int player_id;
     protected String username;
+    protected String address;
+    protected int port;
     protected Socket socket;
+    protected int is_alive;
+
     protected PrintWriter out; 
-    protected boolean isJoin;
 
     protected BufferedReader in;
     private boolean running = true;
@@ -35,7 +39,7 @@ public class ServerThread extends Thread {
     public ServerThread(Socket socket) {
     	super("ServerThread");
         this.socket = socket;
-        isJoin = false;
+        is_alive = 0;
         try{
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true); 
@@ -64,7 +68,7 @@ public class ServerThread extends Thread {
     //mengirim masukan bergantung dari method
     public void sendResponse(String method){
         //belum join
-        if(!isJoin){
+        if(is_alive==0){
             if(method.equals("join")) {
                 joinGame();
             }
@@ -78,6 +82,9 @@ public class ServerThread extends Thread {
             }
             else if (method.equals("leave")) {
                 leave();
+            }
+            else if(method.equals("client_address")) {
+                listClient();
             }
         }
     }
@@ -98,8 +105,10 @@ public class ServerThread extends Thread {
                     Server.clients.add(this);
                     player_id = Server.clients.size();
                     username = name;
+                    address = jsonRequest.getString("udp_address");
+                    port = jsonRequest.getInt("udp_port");
                     Server.usernames.add(username);
-                    isJoin = true;
+                    is_alive = 1;
 
                     //response berhasil
                     jsonResponse.put("status", "ok");
@@ -116,6 +125,32 @@ public class ServerThread extends Thread {
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
         } catch (org.json.JSONException e) {}
+    }
+
+    //response for method list client
+    public void listClient(){
+        try{
+            //mengembalikan list of clients
+            jsonResponse = new JSONObject();
+            JSONArray list = new JSONArray();
+
+            for(int i=0; i<Server.clients.size(); i++){
+                JSONObject obj = new JSONObject();
+                obj.put("player_id", Server.clients.get(i).getPlayerId());
+                obj.put("is_alive", Server.clients.get(i).getAlive());
+                obj.put("address", Server.clients.get(i).getAddress());
+                obj.put("port", Server.clients.get(i).getPort());
+                obj.put("username", Server.clients.get(i).getUsername());
+                list.put(obj);
+            }
+
+            //kirim response
+            jsonResponse.put("clients", list);
+            System.out.println("Sending response: " + jsonResponse.toString());
+            out.println(jsonResponse.toString());
+         } catch (org.json.JSONException e) {}
+
+
     }
 
     //leave
@@ -135,19 +170,36 @@ public class ServerThread extends Thread {
             out.println(jsonResponse.toString());
         } catch (org.json.JSONException e) {}
     }
-
-    public Socket getSocket(){
-    	return socket;
-    }
-
-    public String getUsername(){
-        return username;
-    }
     
     public void run(){
         while (running)
     	   readRequest();
         out.close();
+    }
+
+    //getter
+    public int getPlayerId(){
+        return player_id;
+    }
+
+    public Socket getSocket(){
+        return socket;
+    }
+
+    public String getUsername(){
+        return username;
+    }
+
+    public String getAddress(){
+        return address;
+    }
+
+    public int getPort(){
+        return port;
+    }
+
+    public int getAlive(){
+        return is_alive;
     }
 }
             
