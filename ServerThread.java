@@ -21,22 +21,25 @@ public class ServerThread extends Thread {
 	protected String response;
     protected Socket socket;
     protected BufferedReader in;
+    private boolean running = true;
 
     public ServerThread(Socket socket) {
     	super("ServerThread");
         this.socket = socket;
+        try{
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void readResponse(){
         try{
-        	in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             int c;
-            response = "";
-            while((c=in.read())!=-1){
-                response+=(char)c;
-            }
+            response = in.readLine();
             System.out.println("Response: " + response);
-            in.close();
+            if (response.equals("{\"method\":\"disconnect\"}"))
+                running = false;
         } catch (IOException e) {
             e.printStackTrace();
             response = "IOException: " + e.toString();
@@ -47,7 +50,8 @@ public class ServerThread extends Thread {
     	return socket;
     }
     public void run(){
-    	readResponse();
+        while (running)
+    	   readResponse();
     }
 }
             

@@ -32,7 +32,7 @@ public class Client {
 			dstPort = 9876;
 			socket = new Socket(dstAddress, dstPort);
             System.out.println("Server has connected");
-            out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);            
+	        out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);      
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -58,16 +58,20 @@ public class Client {
         // Send json
 	    System.out.println("Request: " + json.toString());
 	    out.println(json.toString());
-	    out.close();
 	}
 
 	public void disconnect(){
+		// Tell server to disconnect
+		try{
+			json = new JSONObject();
+	        json.put("method", "disconnect");
+        } catch (org.json.JSONException e) {}
+	    out.println(json.toString());
+
 		try {
-            
 	        socket.close();
-	        
+	        out.close();
         } catch (IOException e) {e.printStackTrace();}
-		
 	}
 
 	public static void main(String args[]) throws Exception
@@ -83,7 +87,5 @@ public class Client {
 			input = sc.nextLine();
 		}
 		client.disconnect();
-		
-		
 	}
 }
