@@ -54,7 +54,6 @@ public class ServerThread extends Thread {
         try{
 
             request = in.readLine();
-            System.out.println(player_id + " " + request);
             jsonRequest = new JSONObject(request);
             
             System.out.println("Request: " + request);
@@ -63,9 +62,10 @@ public class ServerThread extends Thread {
             sendResponse(method);
 
         } catch (IOException e) {
-            e.printStackTrace();
-            request = "IOException: " + e.toString();
-        } catch (org.json.JSONException e) {}
+            sendErrorResponse();
+        } catch (org.json.JSONException e) {
+            sendErrorResponse();
+        }
     }
 
     //mengirim masukan bergantung dari method
@@ -76,12 +76,12 @@ public class ServerThread extends Thread {
                 joinGame();
             }
             else {
-                sendErrorResponse();
+                sendFailResponse("please join first");
             }
         }
         else{
             if(method.equals("join")) {
-                sendErrorResponse();
+                sendFailResponse("you've already joined");
             }
             else if (method.equals("leave")) {
                 leave();
@@ -104,8 +104,7 @@ public class ServerThread extends Thread {
                 String name = jsonRequest.getString("username");
                 //if username exists
                 if(Server.usernames.contains(name)) {
-                    jsonResponse.put("status", "fail");
-                    jsonResponse.put("description", "user exists");
+                    sendFailResponse("user exists");
                 }
                 else { 
                     Server.clients.add(this);
@@ -119,18 +118,21 @@ public class ServerThread extends Thread {
                     //response berhasil
                     jsonResponse.put("status", "ok");
                     jsonResponse.put("player_id", player_id);
+
+
+                    //kirim response
+                    System.out.println("Sending response: " + jsonResponse.toString());
+                    out.println(jsonResponse.toString());
                 }
             }
             //player sudah pas 6, tunggu dulu
             else {
-                jsonResponse.put("status", "fail");
-                jsonResponse.put("description", "please wait, game is currently running");
+                sendFailResponse("please wait, game is currently running");
             }
 
-            //kirim response
-            System.out.println("Sending response: " + jsonResponse.toString());
-            out.println(jsonResponse.toString());
-        } catch (org.json.JSONException e) {}
+        } catch (org.json.JSONException e) {
+            sendErrorResponse();
+        }
     }
 
     //response for request ready
@@ -141,8 +143,6 @@ public class ServerThread extends Thread {
                 sleep(500);
         } catch (InterruptedException e){}
 
-
-        System.out.println("Keluar!!!");
         try{
             jsonResponse = new JSONObject();
             jsonResponse.put("status", "ok");
@@ -151,7 +151,9 @@ public class ServerThread extends Thread {
             //kirim response
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
-        } catch (org.json.JSONException e) {}
+        } catch (org.json.JSONException e) {
+            sendErrorResponse();
+        }
     }
 
     //response for method list client
@@ -177,12 +179,29 @@ public class ServerThread extends Thread {
             jsonResponse.put("description", "list of clients retrieved");
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
-         } catch (org.json.JSONException e) {}
+         } catch (org.json.JSONException e) {
+            sendErrorResponse();
+         }
     }
 
     //leave
     public void leave(){
         running = false;
+    }
+
+    //response untuk request yang tidak sesuai kebutuhan
+    public void sendFailResponse(String desc){
+        try {
+            jsonResponse = new JSONObject();
+            jsonResponse.put("status", "fail");
+            jsonResponse.put("description", desc);
+
+            //kirim response
+            System.out.println("Sending response: " + jsonResponse.toString());
+            out.println(jsonResponse.toString());
+        } catch (org.json.JSONException e) {
+            sendReadyResponse();
+        }
     }
 
     //response for error request
