@@ -18,22 +18,24 @@ public class ServerThread extends Thread {
 	protected static String dstAddress;
 	protected static int dstPort;
 	protected static InetAddress IPAddress;
-    protected String request; //new
+    protected String request; 
 	protected String response;
+
     protected int player_id;
     protected String username;
     protected Socket socket;
-    protected PrintWriter out; //new
+    protected PrintWriter out; 
+    protected boolean isJoin;
+
     protected BufferedReader in;
     private boolean running = true;
-    private JSONObject jsonRequest; //new
-    private JSONObject jsonResponse; //new
+    private JSONObject jsonRequest; 
+    private JSONObject jsonResponse; 
 
-    public ServerThread(Socket socket, int id, String username) {
+    public ServerThread(Socket socket) {
     	super("ServerThread");
         this.socket = socket;
-        player_id = id;
-        this.username = username;
+        isJoin = false;
         try{
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true); 
@@ -44,32 +46,94 @@ public class ServerThread extends Thread {
 
     public void readRequest(){
         try{
-            int c;
+
             request = in.readLine();
+            jsonRequest = new JSONObject(request);
+            
             System.out.println("Request: " + request);
-            if (request.equals("{\"method\":\"leave\"}")){
-                running = false;
-            } else {
-                sendResponse();
-            }
+            String method = jsonRequest.getString("method");
+            
+            sendResponse(method);
+
         } catch (IOException e) {
             e.printStackTrace();
             request = "IOException: " + e.toString();
+        } catch (org.json.JSONException e) {}
+    }
+
+    //mengirim masukan bergantung dari method
+    public void sendResponse(String method){
+        //belum join
+        if(!isJoin){
+            if(method.equals("join")) {
+                joinGame();
+            }
+            else {
+                sendErrorResponse();
+            }
+        }
+        else{
+            if(method.equals("join")) {
+                sendErrorResponse();
+            }
+            else if (method.equals("leave")) {
+                leave();
+            }
         }
     }
 
-    public void sendResponse(){
-
-        // Create json
+    //response for method join
+    public void joinGame(){
         try{
+            //mengecek apakah player sudah 6 
             jsonResponse = new JSONObject();
-            jsonResponse.put("status", "ok");
-            jsonResponse.put("player_id", "dummy");
-        } catch (org.json.JSONException e) {}
+            if(Server.clients.size() < 6) {
+                String name = jsonRequest.getString("username");
+                //if username exists
+                if(Server.usernames.contains(name)) {
+                    jsonResponse.put("status", "fail");
+                    jsonResponse.put("description", "user exists");
+                }
+                else { 
+                    Server.clients.add(this);
+                    player_id = Server.clients.size();
+                    username = name;
+                    Server.usernames.add(username);
+                    isJoin = true;
 
-        // Send json
-        System.out.println("Sending response: " + jsonResponse.toString());
-        out.println(jsonResponse.toString());
+                    //response berhasil
+                    jsonResponse.put("status", "ok");
+                    jsonResponse.put("player_id", player_id);
+                }
+            }
+            //player sudah pas 6, tunggu dulu
+            else {
+                jsonResponse.put("status", "fail");
+                jsonResponse.put("description", "please wait, game is currently running");
+            }
+
+            //kirim response
+            System.out.println("Sending response: " + jsonResponse.toString());
+            out.println(jsonResponse.toString());
+        } catch (org.json.JSONException e) {}
+    }
+
+    //leave
+    public void leave(){
+        running = false;
+    }
+
+    //response for error request
+    public void sendErrorResponse(){
+        try {
+            jsonResponse = new JSONObject();
+            jsonResponse.put("status", "error");
+            jsonResponse.put("description", "wrong request");
+
+            //kirim response
+            System.out.println("Sending response: " + jsonResponse.toString());
+            out.println(jsonResponse.toString());
+        } catch (org.json.JSONException e) {}
     }
 
     public Socket getSocket(){
