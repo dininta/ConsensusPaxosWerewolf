@@ -43,10 +43,13 @@ public class Server {
                 try{
                     //buat socket
                     Socket socket = serverSocket.accept();
+                    System.out.println("socket: " + socket);
                     //baca json dari socket
                     in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                     out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
-                    JSONObject obj = new JSONObject(in.readLine());
+                    String request = in.readLine();
+                    System.out.println(request);
+                    JSONObject obj = new JSONObject(request);
                     String method = obj.getString("method");
                     JSONObject json = new JSONObject();
 
@@ -61,7 +64,7 @@ public class Server {
                                 json.put("description", "user exists");
                             }
                             else {
-                                ServerThread client = new ServerThread(serverSocket.accept(), countClient, username);
+                                ServerThread client = new ServerThread(socket, countClient, username);
                                 client.start();
                                 clients.add(client);
                                 usernames.add(client.getUsername());
@@ -69,7 +72,6 @@ public class Server {
                                 //response berhasil
                                 json.put("status", "ok");
                                 json.put("player_id", countClient);
-
                                 countClient++;
                             }
                         }
