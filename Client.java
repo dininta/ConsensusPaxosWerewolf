@@ -209,16 +209,16 @@ public class Client {
         } catch (org.json.JSONException e) {}
     }
 
-	public void disconnect(int status){
-		// Tell server to disconnect
-		if (status == 1){
-			try{
-				jsonRequest = new JSONObject();
-		        jsonRequest.put("method", "leave");
-	        } catch (org.json.JSONException e) {}
-		    out.println(jsonRequest.toString());
-		}
+    public void leave(){
+		try{
+			jsonRequest = new JSONObject();
+	        jsonRequest.put("method", "leave");
+	    } catch (org.json.JSONException e) {}
+		out.println(jsonRequest.toString());
+    }
 
+	public void disconnect(){
+		// Tell server to disconnect
 		try {
 	        socket.close();
 	        out.close();
@@ -229,35 +229,41 @@ public class Client {
 	public static void main(String args[]) throws Exception
 	{
 		Client client = new Client();
-
-		// Client join the game
-		System.out.print("Command: ");
 		Scanner sc = new Scanner(System.in);
-		String input = sc.nextLine();
-		while (!input.equals("join")){ // if method != "join" then repeat
-			System.out.println("Unknown command: " + input + "!!!");
+		while (true){ // quit loop only by using System.exit(0)
+			// join game
 			System.out.print("Command: ");
-			input = sc.nextLine();
-		}
-		while (client.joinGame() != 0){ // if status != "ok" then repeat
-			// nothing
-		}
-		/*while (client.readyUp() != 0){ // if status != "ok" then repeat
-			// nothing
-		}*/
-
-		// Get command from client
-		System.out.print("Command: ");
-		input = sc.nextLine();
-		while (!input.equals("quit")){ // if method != "join" then repeat
-			if (input.equals("client_address"))
-				client.getListClient();
-			else
+			String input = sc.nextLine();
+			while (!input.equals("join")){ // if method != "join" then repeat
+				if (input.equals("quit")){
+					client.disconnect();
+					System.exit(0);
+				}
 				System.out.println("Unknown command: " + input + "!!!");
+				System.out.print("Command: ");
+				input = sc.nextLine();
+			}
+			while (client.joinGame() != 0){ // if status != "ok" then repeat
+				// nothing
+			}
+
+			// ready up
+			/*while (client.readyUp() != 0){ // if status != "ok" then repeat
+				// nothing
+			}*/
+
+			// list client
 			System.out.print("Command: ");
 			input = sc.nextLine();
+			while (!input.equals("client_address")){ // if method != "join" then repeat
+				if (input.equals("leave")){
+					leave(); // leave belum bisa looping
+				}
+				System.out.println("Unknown command: " + input + "!!!");
+				System.out.print("Command: ");
+				input = sc.nextLine();
+			}
+			client.disconnect();
 		}
-
-		client.disconnect(0);
 	}
 }
