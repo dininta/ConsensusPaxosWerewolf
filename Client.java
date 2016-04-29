@@ -33,6 +33,7 @@ public class Client {
     protected String request; //new
 	protected String response;
     protected String username;
+    protected int playerId;
 
 	public Client(){
 		try {
@@ -77,19 +78,53 @@ public class Client {
         // Send json
 	    System.out.println("Sending request: " + jsonRequest.toString());
 	    out.println(jsonRequest.toString());
+
+	    // Receive response
 	    readResponse();
+	    try {
+		    String status = jsonResponse.getString("status");
+		    if (status.equals("ok")) {
+		    	playerId = jsonResponse.getInt("player_id");
+		    	System.out.println("Your player ID is: " + playerId);
+		    }
+		    else {
+		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
+		    }
+		} catch (JSONException e) {}
+
+		// Send method ready
+		try{
+			jsonRequest = new JSONObject();
+	        jsonRequest.put("method", "ready");
+        } catch (org.json.JSONException e) {}
+	    out.println(jsonRequest.toString());
 	}
+
+
+
+/*	public void getListClient() {
+		// Send request
+		try{
+			jsonRequest = new JSONObject();
+	        jsonRequest.put("method", "client_address");
+        } catch (org.json.JSONException e) {}
+	    out.println(json.toString());
+
+	    // Get server response
+	    readResponse();
+	    //String status = jsonResponse.getJSONObject("LabelData").getString("slogan");
+	    
+	}*/
 
 	public void readResponse(){
         try{
             int c;
             response = in.readLine();
-            System.out.println("Response: " + response);
-            //sendResponse(); send another request(?)
+            jsonResponse = new JSONObject(response);
         } catch (IOException e) {
             e.printStackTrace();
             response = "IOException: " + e.toString();
-        }
+        } catch (org.json.JSONException e) {}
     }
 
 	public void disconnect(){
@@ -116,7 +151,7 @@ public class Client {
 		while(!input.equals("quit")) {
 			if(input.equals("join")) {
 				client.joinGame();
-			} else{
+			} else {
 				System.out.println("Unknown command: " + input + "!!!");
 			}
 			System.out.print("Command: ");
