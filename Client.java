@@ -231,39 +231,43 @@ public class Client {
 		Client client = new Client();
 		Scanner sc = new Scanner(System.in);
 		while (true){ // quit loop only by using System.exit(0)
-			// join game
-			System.out.print("Command: ");
-			String input = sc.nextLine();
-			while (!input.equals("join")){ // if method != "join" then repeat
-				if (input.equals("quit")){
-					client.disconnect();
-					System.exit(0);
+			gameplay:
+			for (int i = 1; i <= 1; i++){ // one dummy loop
+				// join game
+				System.out.print("Command utama: ");
+				String input = sc.nextLine();
+				while (!input.equals("join")){ // if method != "join" then repeat
+					if (input.equals("quit")){
+						client.disconnect();
+						System.exit(0);
+					}
+					System.out.println("Unknown command: " + input + "!!!");
+					System.out.print("Command: ");
+					input = sc.nextLine();
 				}
-				System.out.println("Unknown command: " + input + "!!!");
+				while (client.joinGame() != 0){ // if status != "ok" then repeat
+					// nothing
+				}
+
+				// ready up
+				while (client.readyUp() != 0){ // if status != "ok" then repeat
+					// nothing
+				}
+
+				// list client
 				System.out.print("Command: ");
 				input = sc.nextLine();
-			}
-			while (client.joinGame() != 0){ // if status != "ok" then repeat
-				// nothing
-			}
-
-			// ready up
-			while (client.readyUp() != 0){ // if status != "ok" then repeat
-				// nothing
-			}
-
-			// list client
-			System.out.print("Command: ");
-			input = sc.nextLine();
-			while (!input.equals("client_address")){ // if method != "join" then repeat
-				if (input.equals("leave")){
-					leave(); // leave belum bisa looping
+				while (!input.equals("client_address")){ // if method != "join" then repeat
+					if (input.equals("leave")){
+						client.leave(); // leave belum bisa looping
+						break gameplay;
+					}
+					System.out.println("Unknown command: " + input + "!!!");
+					System.out.print("Command: ");
+					input = sc.nextLine();
 				}
-				System.out.println("Unknown command: " + input + "!!!");
-				System.out.print("Command: ");
-				input = sc.nextLine();
+				client.getListClient();
 			}
 		}
-		client.disconnect();
 	}
 }

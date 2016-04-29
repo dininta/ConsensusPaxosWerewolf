@@ -136,8 +136,12 @@ public class ServerThread extends Thread {
     //response for request ready
     public void sendReadyResponse(){
         //nunggu sampai semua jumlah player sudah mencapai max
-        
-        while(Server.clients.size() < maxPlayer);
+        try{
+            while(Server.clients.size() < maxPlayer)
+                sleep(500);
+        } catch (InterruptedException e){}
+
+
         System.out.println("Keluar!!!");
         try{
             jsonResponse = new JSONObject();
