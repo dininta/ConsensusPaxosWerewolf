@@ -19,13 +19,17 @@ public class ServerThread extends Thread {
 	protected static int dstPort;
 	protected static InetAddress IPAddress;
 	protected String response;
+    protected int player_id;
+    protected String username;
     protected Socket socket;
     protected BufferedReader in;
     private boolean running = true;
 
-    public ServerThread(Socket socket) {
+    public ServerThread(Socket socket, int id, String username) {
     	super("ServerThread");
         this.socket = socket;
+        player_id = id;
+        this.username = username;
         try{
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         } catch (IOException e) {
@@ -49,6 +53,11 @@ public class ServerThread extends Thread {
     public Socket getSocket(){
     	return socket;
     }
+
+    public String getUsername(){
+        return username;
+    }
+    
     public void run(){
         while (running)
     	   readResponse();
