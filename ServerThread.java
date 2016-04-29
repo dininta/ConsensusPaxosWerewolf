@@ -18,32 +18,54 @@ public class ServerThread extends Thread {
 	protected static String dstAddress;
 	protected static int dstPort;
 	protected static InetAddress IPAddress;
+    protected String request; //new
 	protected String response;
     protected Socket socket;
+    protected PrintWriter out; //new
     protected BufferedReader in;
     private boolean running = true;
+    private JSONObject jsonRequest; //new
+    private JSONObject jsonResponse; //new
 
     public ServerThread(Socket socket) {
     	super("ServerThread");
         this.socket = socket;
         try{
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true); 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void readResponse(){
+    public void readRequest(){
         try{
             int c;
-            response = in.readLine();
-            System.out.println("Response: " + response);
-            if (response.equals("{\"method\":\"disconnect\"}"))
+            request = in.readLine();
+            System.out.println("Request: " + request);
+            if (request.equals("{\"method\":\"leave\"}")){
                 running = false;
+            } else {
+                sendResponse();
+            }
         } catch (IOException e) {
             e.printStackTrace();
-            response = "IOException: " + e.toString();
+            request = "IOException: " + e.toString();
         }
+    }
+
+    public void sendResponse(){
+
+        // Create json
+        try{
+            jsonResponse = new JSONObject();
+            jsonResponse.put("status", "ok");
+            jsonResponse.put("player_id", "dummy");
+        } catch (org.json.JSONException e) {}
+
+        // Send json
+        System.out.println("Sending response: " + jsonResponse.toString());
+        out.println(jsonResponse.toString());
     }
 
     public Socket getSocket(){
@@ -51,7 +73,8 @@ public class ServerThread extends Thread {
     }
     public void run(){
         while (running)
-    	   readResponse();
+    	   readRequest();
+        out.close();
     }
 }
             
