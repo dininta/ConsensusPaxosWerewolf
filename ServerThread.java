@@ -149,8 +149,6 @@ public class ServerThread extends Thread {
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
          } catch (org.json.JSONException e) {}
-
-
     }
 
     //leave

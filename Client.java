@@ -58,7 +58,7 @@ public class Client {
         }
 	}
 
-	public void joinGame(){
+	public int joinGame(){
 		// Get username
 		BufferedReader inFromuser = new BufferedReader(new InputStreamReader(System.in));
 		System.out.print("Username: ");
@@ -86,18 +86,38 @@ public class Client {
 		    if (status.equals("ok")) {
 		    	playerId = jsonResponse.getInt("player_id");
 		    	System.out.println("Your player ID is: " + playerId);
+		    	return 0;
 		    }
-		    else {
+		    else { // status == "fail" or status == "error"
 		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
+		    	return 1;
 		    }
 		} catch (JSONException e) {}
+		return 1;
+	}
 
-		// Send method ready
+	public int readyUp(){
+	// Send method ready
 		try{
 			jsonRequest = new JSONObject();
 	        jsonRequest.put("method", "ready");
         } catch (org.json.JSONException e) {}
 	    out.println(jsonRequest.toString());
+
+	    // Receive response
+	    readResponse();
+	    try {
+		    String status = jsonResponse.getString("status");
+		    if (status.equals("ok")) {
+		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
+		    	return 0;
+		    }
+		    else { // status == "fail" or status == "error"
+		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
+		    	return 1;
+		    }
+		} catch (JSONException e) {}
+		return 1;
 	}
 
 
@@ -127,13 +147,15 @@ public class Client {
         } catch (org.json.JSONException e) {}
     }
 
-	public void disconnect(){
+	public void disconnect(int status){
 		// Tell server to disconnect
-		try{
-			jsonRequest = new JSONObject();
-	        jsonRequest.put("method", "leave");
-        } catch (org.json.JSONException e) {}
-	    out.println(jsonRequest.toString());
+		if (status == 1){
+			try{
+				jsonRequest = new JSONObject();
+		        jsonRequest.put("method", "leave");
+	        } catch (org.json.JSONException e) {}
+		    out.println(jsonRequest.toString());
+		}
 
 		try {
 	        socket.close();
@@ -148,15 +170,17 @@ public class Client {
 		System.out.print("Command: ");
 		Scanner sc = new Scanner(System.in);
 		String input = sc.nextLine();
-		while(!input.equals("quit")) {
-			if(input.equals("join")) {
-				client.joinGame();
-			} else {
-				System.out.println("Unknown command: " + input + "!!!");
-			}
+		while (!input.equals("join")){ // if method != "join" then repeat
+			System.out.println("Unknown command: " + input + "!!!");
 			System.out.print("Command: ");
 			input = sc.nextLine();
 		}
-		client.disconnect();
+		while (client.joinGame() != 0){ // if status != "ok" then repeat
+			// nothing
+		}
+		while (client.readyUp() != 0){ // if status != "ok" then repeat
+			// nothing
+		}
+		client.disconnect(0);
 	}
 }
