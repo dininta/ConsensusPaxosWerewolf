@@ -100,12 +100,24 @@ public class ServerThread extends Thread {
                 listClient();
             }
             else if(method.equals("ready")) {
-                sendReadyResponse();
+                //game belum mulai
+                if(!Server.isRunning)
+                    sendReadyResponse();
+                else
+                    sendFailResponse("you've ready, game is currently running");
             }
             else {
                 sendFailResponse("command not found");
             }
         }
+    }
+
+    public void disconnect(){
+        try {
+            out.close();
+            socket.close();
+        } catch (IOException e) {e.printStackTrace();}
+
     }
 
     //response for method join
@@ -286,7 +298,6 @@ public class ServerThread extends Thread {
             //kirim response
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
-            running = false;
             is_alive = 0;
         } catch (org.json.JSONException e) {
             sendErrorResponse();

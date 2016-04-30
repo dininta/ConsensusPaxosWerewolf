@@ -241,7 +241,7 @@ public class Client {
 
 	public void readResponse(){
         try{
-            int c;
+            
             response = in.readLine();
             jsonResponse = new JSONObject(response);
         } catch (IOException e) {
@@ -261,7 +261,7 @@ public class Client {
 		    String status = jsonResponse.getString("status");
 		    if (status.equals("ok")) {
 		    	System.out.println("status: " + jsonResponse.getString("status"));
-		    	disconnect();
+		    	isAlive = false;
 		    }
 		    else { // status == "fail" or status == "error"
 		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
@@ -372,11 +372,8 @@ public class Client {
 					client.processCommand("leave");
 					client.isAlive = false;
 				}
-				else {
-					client.processCommand("leave");
-					client.isAlive = false;
-				}
-				break;
+				client.disconnect();
+				System.exit(0);
 
 			}
 
