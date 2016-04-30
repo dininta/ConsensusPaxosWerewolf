@@ -57,6 +57,8 @@ public class Client {
     protected String udpAddress;
     protected DatagramSocket datagramSocket;
     protected DatagramSocket listenSocket;
+    protected int kpuId = 0;
+    protected int[] previousProposal = {0, 0};
     protected int kpuPort;
     protected InetAddress kpuAddress;
 
@@ -72,6 +74,8 @@ public class Client {
     protected ArrayList<Player> players;
     protected final ArrayList[] messageQueue = new ArrayList[1];
 	protected int werewolfVote[];
+	protected String role;
+	protected String time;
 
     /*** KONSTRUKTOR ***/
 	public Client(int port){
@@ -187,15 +191,41 @@ public class Client {
 		    String status = jsonResponse.getString("status");
 		    if (status.equals("ok")) {
 		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
-		    	
+		    	startGame();
 		    }
 		    else { // status == "fail" or status == "error"
 		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
-		    	
 		    }
 		} catch (JSONException e) {}
 		
 	}
+
+	public void startGame(){
+		readResponse();
+		try {
+		    String method = jsonResponse.getString("method");
+		    if (method.equals("start")) {
+		    	time = jsonResponse.getString("time");
+		    	role = jsonResponse.getString("role");
+		    	System.out.println("time: " + jsonResponse.getString("time"));
+		    	System.out.println("role: " + jsonResponse.getString("role"));
+		    	System.out.println("description: " + jsonResponse.getString("description"));
+		    	if (role.equals("werewolf")){
+		    		System.out.println("friend: " + jsonResponse.getJSONArray("friend"));
+		    	}
+				jsonRequest = new JSONObject();
+			    jsonRequest.put("status", "ok");
+			    out.println(jsonRequest.toString());
+			    startElection();
+			    
+		    }
+		    else { // status == "fail" or status == "error"
+		    	System.out.println("ERROR!!!");
+		    	//System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
+		    }
+		} catch (JSONException e) {}
+	}
+
 
 	public void getListClient() {
 		// Send request
@@ -285,7 +315,7 @@ public class Client {
 
 	/*** METHOD FOR PROPOSER ***/
 
-	public void prepareProposal() {
+	public boolean prepareProposal() {
 		// Create json proposal
 		try{
 			jsonRequest = new JSONObject();
@@ -308,6 +338,40 @@ public class Client {
 				} catch (IOException e){}
 			}
 		}
+
+		int counterAccepted = 0;
+	    int counterRejected = 0;
+	    boolean timeout = false;
+	    while (!timeout && ((counterAccepted < players.size()/2 + 1) && (counterRejected < players.size()/2 + 1))){
+		    if (messageQueue[0].size() > 0) {
+		    	String response = messageQueue[0].remove(0).toString();
+		    	try {
+		    		jsonResponse = new JSONObject (response);
+		    		if (jsonResponse.getString("status").equals("ok")){
+		    			counterAccepted++;
+		    		} else {
+		    			counterRejected++;
+		    		}
+		    	} catch (org.json.JSONException e) {}
+	    	}
+		}	
+		if (timeout){
+			return false;
+		}
+		else if (counterAccepted == counterRejected){
+			return false;
+		} 
+		else if (counterAccepted >= players.size()/2 + 1) {
+			return true;
+		}
+		else if (counterRejected >= players.size()/2 + 1) {
+			return false;
+		} else {
+			return false;
+		}
+
+
+
 	}
 
 	public void acceptProposal() {
@@ -332,6 +396,16 @@ public class Client {
 				} catch (UnknownHostException e){
 				} catch (IOException e){}
 			}
+		}
+
+		boolean timeout = false;
+	    while (!timeout){
+		    if (messageQueue[0].size() > 0) {
+		    	String response = messageQueue[0].remove(0).toString();
+		    	try {
+		    		jsonResponse = new JSONObject (response);
+		    	} catch (org.json.JSONException e) {}
+	    	}
 		}
 	}
 
@@ -363,6 +437,157 @@ public class Client {
 	}
 	
 	/*** METHOD FOR ACCEPTOR ***/
+
+	public void startElection(){
+		while(kpuId==0){
+			if (playerId >= players.size() - 1){
+			    boolean success = prepareProposal();
+			    while (!success) {
+			    	prepareProposal();
+			    }
+			   	acceptProposal();
+
+			   	// Wait KPU id from server
+			   	readResponse();
+			   	try {
+			    	String method = jsonResponse.getString("method");
+			    	if (method.equals("kpu_selected"))
+			    		kpuId = jsonResponse.getInt("kpu_id"); 
+				} catch (JSONException e) {}
+			    
+
+			    // wait proposal (?)
+			    // if (jawaban)
+			    //nerima kiriman
+			    //itung response
+			}
+			else{
+			    waitProposal();
+			}
+		}
+		// election selesai!!!
+		// startday/night(?);
+		// terima vote_now dari server
+
+	}
+	public void waitProposal() {
+		if (messageQueue[0].size() > 0){
+			try{
+				response = messageQueue[0].remove(0).toString();
+				jsonResponse = new JSONObject(response);
+
+				if (jsonResponse.getString("method").equals("prepare_proposal")){
+					int a = jsonResponse.getJSONArray("proposal_id").getInt(0);
+					int b = jsonResponse.getJSONArray("proposal_id").getInt(1);
+					int c = previousProposal[0];
+					int d = previousProposal[1];
+					if (previousProposal[0] == 0 && previousProposal[1] == 0){	
+						jsonRequest = new JSONObject();
+					    jsonRequest.put("status", "ok");
+				        jsonRequest.put("description", "accepted");
+				        previousProposal[0] = a;
+				        previousProposal[1] = b;
+				    } else if ((a > c) || (a == c && b > d)) {
+				    	jsonRequest = new JSONObject();
+					    jsonRequest.put("status", "ok");
+				        jsonRequest.put("description", "accepted");
+				        jsonRequest.put("previous_accepted", previousProposal);
+				        previousProposal[0] = a;
+				        previousProposal[1] = b;
+				    } else {
+				    	jsonRequest = new JSONObject();
+					    jsonRequest.put("status", "fail");
+				        jsonRequest.put("description", "rejected");
+				    }
+
+				    // send response to proposer
+				    InetAddress proposerAddress = null;
+				    int proposerPort = 0;
+				    findID:
+				    for (int i=0; i<players.size(); i++) {
+				    	if (players.get(i).playerId == jsonResponse.getJSONArray("proposal_id").getInt(1)) {
+				    		try {
+				    			proposerAddress = InetAddress.getByName(players.get(i).address);
+				    			proposerPort = players.get(i).port;
+				    		} catch (UnknownHostException e) {}
+				    		break findID;
+				    	}
+				    }
+					byte[] sendData = jsonRequest.toString().getBytes();
+					try {
+						DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, proposerAddress, proposerPort);
+						datagramSocket.send(sendPacket);
+					} catch (UnknownHostException e){
+					} catch (IOException e){}
+
+
+				} else if (jsonResponse.getString("method").equals("accept_proposal")){
+
+					// send response to proposer
+					int a = jsonResponse.getJSONArray("proposal_id").getInt(0);
+					int b = jsonResponse.getJSONArray("proposal_id").getInt(1);
+					int c = previousProposal[0];
+					int d = previousProposal[1];
+					if (previousProposal[0] == 0 && previousProposal[1] == 0){	
+						jsonRequest = new JSONObject();
+					    jsonRequest.put("status", "ok");
+				        jsonRequest.put("description", "accepted");
+				    } else if ((a > c) || (a == c && b > d)) {
+				    	jsonRequest = new JSONObject();
+					    jsonRequest.put("status", "ok");
+				        jsonRequest.put("description", "accepted");
+				        jsonRequest.put("previous_accepted", previousProposal);
+				    } else {
+				    	jsonRequest = new JSONObject();
+					    jsonRequest.put("status", "fail");
+				        jsonRequest.put("description", "rejected");
+				    }
+				    //get proposer ID
+				    InetAddress proposerAddress = null;
+				    int proposerPort = 0;
+				    findID:
+				    for (int i=0; i<players.size(); i++) {
+				    	if (players.get(i).playerId == jsonResponse.getJSONArray("proposal_id").getInt(1)) {
+				    		try {
+				    			proposerAddress = InetAddress.getByName(players.get(i).address);
+				    			proposerPort = players.get(i).port;
+				    		} catch (UnknownHostException e) {}
+				    		break findID;
+				    	}
+				    }
+					byte[] sendData = jsonRequest.toString().getBytes();
+					try {
+						DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, proposerAddress, proposerPort);
+						datagramSocket.send(sendPacket);
+					} catch (UnknownHostException e){
+					} catch (IOException e){}
+
+					// send to server
+					try{
+						jsonRequest = new JSONObject();
+			        	jsonRequest.put("method", "accepted_proposal");
+			        	jsonRequest.put("kpu_id", previousProposal[1]);
+			        	jsonRequest.put("description", "Kpu is selected");
+		        	} catch (org.json.JSONException e) {}
+			    	
+			    	// Send json
+			    	System.out.println("Sending request: " + jsonRequest.toString());
+			    	out.println(jsonRequest.toString());
+
+					// read from server
+					readResponse();
+				   	try {
+				    	String method = jsonResponse.getString("method");
+				    	if (method.equals("kpu_selected"))
+				    		kpuId = jsonResponse.getInt("kpu_id"); 
+					} catch (JSONException e) {}
+
+				} else {
+
+				}
+			} catch (org.json.JSONException e) {}
+		}
+	}
 	
 	public void killCivilianVote() {
 		// Get player ID to be killed
