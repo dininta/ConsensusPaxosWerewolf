@@ -2,16 +2,15 @@ import java.net.DatagramSocket;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.io.*;
+import java.util.*;
 
 public class UDPListenerThread extends Thread {
 	protected DatagramSocket serverSocket;
-	protected String[] message;
-	protected boolean[] valid;
+	protected ArrayList[] messageQueue;
 
-	public UDPListenerThread(DatagramSocket serverSocket, String[] message, boolean[] valid){
+	public UDPListenerThread(DatagramSocket serverSocket, ArrayList[] messageQueue){
 		this.serverSocket = serverSocket;
-		this.message = message;
-		this.valid = valid;
+		this.messageQueue = messageQueue;
 	}
 
 	public void run(){
@@ -23,8 +22,7 @@ public class UDPListenerThread extends Thread {
 				serverSocket.receive(receivePacket);
 			} catch (IOException e) {}
 
-			message[0] = new String(receivePacket.getData(), 0, receivePacket.getLength());
-			valid[0] = true;
+			messageQueue[0].add(new String(receivePacket.getData(), 0, receivePacket.getLength()));
 		}
     }
 

@@ -11,18 +11,16 @@ import java.lang.*;
 
 public class ClientUDP
 {
-	protected static final String[] message = new String[1];
-	protected static final boolean[] valid = new boolean[1];
+	protected static final ArrayList[] messageQueue = new ArrayList[1];
+
 	/**
 	 * Contoh kode program untuk node yang menerima paket. Idealnya dalam paxos
 	 * balasan juga dikirim melalui UnreliableSender.
 	 */
 
 
-
 	public synchronized static void printMessage(String message){
 		System.out.println("RECEIVED: " + message);
-		valid[0] = false;
 	}
 	public static void main(String args[]) throws Exception
 	{
@@ -42,9 +40,8 @@ public class ClientUDP
 		int listenPort = Integer.parseInt(port);
 		DatagramSocket serverSocket = new DatagramSocket(listenPort);
 
-		message[0] = "";
-		valid[0] = false;
-		UDPListenerThread udpListenerThread = new UDPListenerThread(serverSocket, message, valid);
+		messageQueue[0] = new ArrayList<String>();
+		UDPListenerThread udpListenerThread = new UDPListenerThread(serverSocket, messageQueue);
 		udpListenerThread.start();
 		while(true){
 			System.out.println("message to send:");
@@ -57,8 +54,8 @@ public class ClientUDP
 			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, targetPort);
 			unreliableSender.send(sendPacket);
 			System.out.print("");
-			if (valid[0]){
-				printMessage(message[0]);
+			while (messageQueue[0].size() > 0){
+				printMessage((String) messageQueue[0].remove(0));
 			}
 		}
 		datagramSocket.close();
