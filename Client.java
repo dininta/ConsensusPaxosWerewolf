@@ -58,7 +58,7 @@ public class Client {
     protected DatagramSocket datagramSocket;
     protected DatagramSocket listenSocket;
     protected int kpuPort;
-    protected String kpuAddress;
+    protected InetAddress kpuAddress;
 
     // variables
     private JSONObject jsonRequest; //new
@@ -68,6 +68,7 @@ public class Client {
     protected String username;
     protected boolean isAlive;
     protected int playerId;
+    protected int counterProposal = 0;
     protected ArrayList<Player> players;
     protected final ArrayList[] messageQueue = new ArrayList[1];
 
@@ -281,7 +282,7 @@ public class Client {
 
 	/*** METHOD FOR PROPOSER ***/
 
-	/*public void prepareProposal() {
+	public void prepareProposal() {
 		// Create json proposal
 		try{
 			jsonRequest = new JSONObject();
@@ -297,19 +298,22 @@ public class Client {
 		byte[] sendData = jsonRequest.toString().getBytes();
 		for (int i=0; i<players.size(); i++) {
 			if (players.get(i).playerId != playerId && players.get(i).isAlive == 1) {
-				DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, kpuAddress, kpuPort);
-				datagramSocket.send(sendPacket);
+				try {
+					DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(players.get(i).address), players.get(i).port);
+					datagramSocket.send(sendPacket);
+				} catch (UnknownHostException e){
+				} catch (IOException e){}
 			}
 		}
-	}*/
+	}
 
 	/*** METHOD FOR WEREWOLF ***/
-	/*
+	
 	public void killWerewolfVote() {
 		// Get player ID to be killed
 		BufferedReader inFromuser = new BufferedReader(new InputStreamReader(System.in));
 		System.out.print("Which player do you want to kill? Insert player id: ");
-		int target;
+		int target = 0;
 		try {
 			target = Integer.parseInt(inFromuser.readLine());
 		} catch (IOException e) {}
@@ -323,17 +327,20 @@ public class Client {
 
 	    // Send json to KPU
 		byte[] sendData = jsonRequest.toString().getBytes();
-		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, kpuAddress, kpuPort);
-		datagramSocket.send(sendPacket);
+		try {
+			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, kpuAddress, kpuPort);
+			datagramSocket.send(sendPacket);
+		} catch (UnknownHostException e){
+		} catch (IOException e){}
 	}
-	*/
+	
 	/*** METHOD FOR ALL CLIENT EXCEPT KPU ***/
-	/*
+	
 	public void killCivilianVote() {
 		// Get player ID to be killed
 		BufferedReader inFromuser = new BufferedReader(new InputStreamReader(System.in));
 		System.out.print("Which werewolf do you want to kill? Insert player id: ");
-		int target;
+		int target = 0;
 		try {
 			target = Integer.parseInt(inFromuser.readLine());
 		} catch (IOException e) {}
@@ -347,10 +354,13 @@ public class Client {
 
 	    // Send json to KPU
 		byte[] sendData = jsonRequest.toString().getBytes();
-		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, kpuAddress, kpuPort);
-		datagramSocket.send(sendPacket);
+		try {
+			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, kpuAddress, kpuPort);
+			datagramSocket.send(sendPacket);
+		} catch (UnknownHostException e){
+		} catch (IOException e){}
 	}
-	*/
+	
 
 	/*** MAIN ***/
 	public static void main(String args[]) throws Exception
