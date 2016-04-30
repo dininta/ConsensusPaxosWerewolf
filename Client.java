@@ -56,6 +56,8 @@ public class Client {
     protected int udpPort;
     protected String udpAddress;
     protected DatagramSocket datagramSocket;
+    protected int kpuPort;
+    protected String kpuAddress;
 
     // variables
     private JSONObject jsonRequest; //new
@@ -65,8 +67,10 @@ public class Client {
     protected String username;
     protected boolean isAlive;
     protected int playerId;
+    protected int counterProposal = 0;
     protected ArrayList<Player> players;
 
+    /*** KONSTRUKTOR ***/
 	public Client(){
 		players = new ArrayList<Player>();
 		isAlive = false;
@@ -92,6 +96,8 @@ public class Client {
             e.printStackTrace();
         }
 	}
+
+	/*** METHOD FOR ALL CLIENTS ***/
 
 	public void processCommand(String command){
 		if(command.equals("join")) {
@@ -121,7 +127,6 @@ public class Client {
 			  
 			} catch (JSONException e) {}
 		}
-
 	}
 
 	public void joinGame(){
@@ -152,18 +157,16 @@ public class Client {
 		    if (status.equals("ok")) {
 		    	playerId = jsonResponse.getInt("player_id");
 		    	System.out.println("Your player ID is: " + playerId);
-		    	isAlive = true;
 		    }
 		    else { // status == "fail" or status == "error"
 		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
 		    	
 		    }
 		} catch (JSONException e) {}
-		
 	}
 
 	public void readyUp(){
-	// Send method ready
+		// Send method ready
 		try{
 			jsonRequest = new JSONObject();
 	        jsonRequest.put("method", "ready");
@@ -183,7 +186,6 @@ public class Client {
 		    	
 		    }
 		} catch (JSONException e) {}
-		
 	}
 
 	public void getListClient() {
@@ -199,6 +201,7 @@ public class Client {
 	    try {
 		    String status = jsonResponse.getString("status");
 		    if (status.equals("ok")) {
+		    	players.clear();
 		    	JSONArray clients = jsonResponse.getJSONArray("clients");
 		    	for (int i = 0; i < clients.length(); ++i) {
 				    JSONObject client = clients.getJSONObject(i);
@@ -229,7 +232,6 @@ public class Client {
 		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
 			}
 		} catch (JSONException e) {}
-	    
 	}
 
 	public void readResponse(){
@@ -272,6 +274,79 @@ public class Client {
         } catch (IOException e) {e.printStackTrace();}
 	}
 
+	/*** METHOD FOR PROPOSER ***/
+
+	public void prepareProposal() {
+		// Create json proposal
+		try{
+			jsonRequest = new JSONObject();
+	        jsonRequest.put("method", "prepare_proposal");
+	        JSONArray proposal_id = new JSONArray();
+	        counterProposal++;
+	        proposal_id.put(counterProposal);
+	        proposal_id.put(playerId);
+	        jsonRequest.put("proposal_id", proposal_id);
+	    } catch (org.json.JSONException e) {}
+
+	    // Send json to every acceptor
+		byte[] sendData = jsonRequest.toString().getBytes();
+		for (int i=0; i<players.size(); i++) {
+			if (players.get(i).playerId != playerId && players.get(i).isAlive == 1) {
+				DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, kpuAddress, kpuPort);
+				datagramSocket.send(sendPacket);
+			}
+		}
+	}
+
+	/*** METHOD FOR WEREWOLF ***/
+
+	public void killWerewolfVote() {
+		// Get player ID to be killed
+		BufferedReader inFromuser = new BufferedReader(new InputStreamReader(System.in));
+		System.out.print("Which player do you want to kill? Insert player id: ");
+		int target;
+		try {
+			target = Integer.parseInt(inFromuser.readLine());
+		} catch (IOException e) {}
+
+		// Create json
+		try{
+			jsonRequest = new JSONObject();
+	        jsonRequest.put("method", "vote_werewolf");
+	        jsonRequest.put("player_id", target);
+	    } catch (org.json.JSONException e) {}
+
+	    // Send json to KPU
+		byte[] sendData = jsonRequest.toString().getBytes();
+		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, kpuAddress, kpuPort);
+		datagramSocket.send(sendPacket);
+	}
+
+	/*** METHOD FOR ALL CLIENT EXCEPT KPU ***/
+
+	public void killCivilianVote() {
+		// Get player ID to be killed
+		BufferedReader inFromuser = new BufferedReader(new InputStreamReader(System.in));
+		System.out.print("Which werewolf do you want to kill? Insert player id: ");
+		int target;
+		try {
+			target = Integer.parseInt(inFromuser.readLine());
+		} catch (IOException e) {}
+
+		// Create json
+		try{
+			jsonRequest = new JSONObject();
+	        jsonRequest.put("method", "vote_civilian");
+	        jsonRequest.put("player_id", target);
+	    } catch (org.json.JSONException e) {}
+
+	    // Send json to KPU
+		byte[] sendData = jsonRequest.toString().getBytes();
+		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, kpuAddress, kpuPort);
+		datagramSocket.send(sendPacket);
+	}
+
+	/*** MAIN ***/
 	public static void main(String args[]) throws Exception
 	{
 		Client client = new Client();
@@ -280,16 +355,8 @@ public class Client {
 		String input = sc.nextLine();
 		while (true){ // quit loop only by using System.exit(0)
 			if(input.equals("quit")) {
-				if(client.isAlive) {
-					client.processCommand("leave");
-					client.isAlive = false;
-				}
-				else {
-					client.processCommand("leave");
-					client.isAlive = false;
-				}
+				client.processCommand("leave");
 				break;
-
 			}
 
 			client.processCommand(input);
