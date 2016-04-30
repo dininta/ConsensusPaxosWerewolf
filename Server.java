@@ -26,12 +26,16 @@ public class Server {
     protected ServerSocket serverSocket = null;
     public static ArrayList<ServerThread> clients;
     public static ArrayList<String> usernames;
+    protected static boolean isRunning;
+    protected static boolean isReady;
 
     public Server(){
         clients = new ArrayList<ServerThread>();
         usernames = new ArrayList<String>();
         dstAddress = "localhost";
         dstPort = 9876; 
+        isReady = false;
+        isRunning = false;
     }
 
     public void run(){
