@@ -33,6 +33,8 @@ public class ServerThread extends Thread {
     protected int is_alive;
     protected boolean isReady;
     protected String role;
+    protected String current_time = "day";  // day or night
+    protected int counter_day = 1;
 
     protected PrintWriter out; 
 
@@ -236,6 +238,44 @@ public class ServerThread extends Thread {
             sendErrorResponse();
         }
 
+    }
+
+    public void changePhase() {
+        if (current_time.equals("night")) {
+            current_time = "day";
+            counter_day++;
+        }
+        else {
+            current_time = "night";
+        }
+
+        try{
+            jsonResponse = new JSONObject();
+            jsonResponse.put("method", "change_phase");
+            jsonResponse.put("time", current_time);
+            jsonResponse.put("days", counter_day);
+            jsonResponse.put("description", "");
+
+            //kirim json
+            System.out.println("Sending response: " + jsonResponse.toString());
+            out.println(jsonResponse.toString());
+        } catch (org.json.JSONException e) {
+            sendErrorResponse();
+        }
+    }
+
+    public void vote() {
+        try{
+            jsonResponse = new JSONObject();
+            jsonResponse.put("method", "vote_now");
+            jsonResponse.put("phase", current_time);
+
+            //kirim json
+            System.out.println("Sending response: " + jsonResponse.toString());
+            out.println(jsonResponse.toString());
+        } catch (org.json.JSONException e) {
+            sendErrorResponse();
+        }
     }
 
     //leave
