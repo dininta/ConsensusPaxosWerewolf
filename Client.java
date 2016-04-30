@@ -216,6 +216,7 @@ public class Client {
 				jsonRequest = new JSONObject();
 			    jsonRequest.put("status", "ok");
 
+			    System.out.println("IN STARTGAME Request: " + jsonRequest.toString());
 			    out.println(jsonRequest.toString());
 			    startElection();
 			    
@@ -234,6 +235,7 @@ public class Client {
 			jsonRequest = new JSONObject();
 	        jsonRequest.put("method", "client_address");
         } catch (org.json.JSONException e) {}
+        System.out.println("IN GETLISTCLIENT Request: " + jsonRequest.toString());
 	    out.println(jsonRequest.toString());
 
 	    // Get server response
@@ -290,6 +292,7 @@ public class Client {
 			jsonRequest = new JSONObject();
 	        jsonRequest.put("method", "leave");
 	    } catch (org.json.JSONException e) {}
+	    System.out.println("IN LEAVE Request: " + jsonRequest.toString());
 		out.println(jsonRequest.toString());
 		readResponse();
 		try {
@@ -376,6 +379,7 @@ public class Client {
 	}
 
 	public void acceptProposal() {
+		System.out.println("IN ACCEPTPROPOSAL");
 		// Create json proposal
 		try{
 			jsonRequest = new JSONObject();
@@ -385,6 +389,7 @@ public class Client {
 	        proposal_id.put(playerId);
 	        jsonRequest.put("proposal_id", proposal_id);
 	        jsonRequest.put("kpu_id", playerId);
+	        System.out.println("PROPOSAL ID" + jsonRequest.toString());
 	    } catch (org.json.JSONException e) {}
 
 	    // Send json to every acceptor
@@ -440,10 +445,16 @@ public class Client {
 	/*** METHOD FOR ACCEPTOR ***/
 
 	public void startElection(){
-		while(kpuId==0){
-			if (playerId >= players.size() - 1){
+		System.out.println("IN STARTELECTION");
+		System.out.println("KPUID: " + kpuId);
+		while (kpuId==0){
+			System.out.println("kpuId==0");
+			//System.out.println("KPUID: " + kpuId);
+			if (playerId >= Server.clients.size() - 1){//ntar jadi players.size() yhaa
+				System.out.println("playerId >= players.size() - 1: " + playerId + " >= " + Server.clients.size() +  " - " + "1");
 			    boolean success = prepareProposal();
 			    if(success) {
+			    	System.out.println("success");
 			    	acceptProposal();
 			    	// Wait KPU id from server
 			   		readResponse();
@@ -452,25 +463,31 @@ public class Client {
 			    		if (method.equals("kpu_selected"))
 			    			kpuId = jsonResponse.getInt("kpu_id"); 
 					} catch (JSONException e) {}
+			    } else{
+			    	System.out.println("tidak success");
 			    }
 			}
 			else{
+				System.out.println("else lalu wait proposal");
 			    waitProposal();
 			}
 		}
 	}
 	
 	public void waitProposal() {
+		System.out.println("IN WAITPROPOSAL");
 		if (messageQueue[0].size() > 0){
 			try{
 				response = messageQueue[0].remove(0).toString();
 				jsonResponse = new JSONObject(response);
 
 				if (jsonResponse.getString("method").equals("prepare_proposal")){
+					System.out.println("IN WAITPROPOSAL, METHOD: PREPARE_PROPOSAL");
 					int a = jsonResponse.getJSONArray("proposal_id").getInt(0);
 					int b = jsonResponse.getJSONArray("proposal_id").getInt(1);
 					int c = previousProposal[0];
 					int d = previousProposal[1];
+					System.out.println("ABCD: "+ a + " " + b + " " + c + " " + d);
 					if (previousProposal[0] == 0 && previousProposal[1] == 0){	
 						jsonRequest = new JSONObject();
 					    jsonRequest.put("status", "ok");
@@ -512,12 +529,14 @@ public class Client {
 
 
 				} else if (jsonResponse.getString("method").equals("accept_proposal")){
+					System.out.println("IN WAITPROPOSAL, METHOD: ACCEPT_PROPOSAL");
 
 					// send response to proposer
 					int a = jsonResponse.getJSONArray("proposal_id").getInt(0);
 					int b = jsonResponse.getJSONArray("proposal_id").getInt(1);
 					int c = previousProposal[0];
 					int d = previousProposal[1];
+					System.out.println("ABCD: "+ a + " " + b + " " + c + " " + d);
 					if (previousProposal[0] == 0 && previousProposal[1] == 0){	
 						jsonRequest = new JSONObject();
 					    jsonRequest.put("status", "ok");
@@ -561,7 +580,8 @@ public class Client {
 		        	} catch (org.json.JSONException e) {}
 			    	
 			    	// Send json
-			    	System.out.println("Sending request: " + jsonRequest.toString());
+			    	System.out.println("IN WAITPROPOSAL Request: " + jsonRequest.toString());
+			    	//System.out.println("Sending request: " + jsonRequest.toString());
 			    	out.println(jsonRequest.toString());
 
 					// read from server
