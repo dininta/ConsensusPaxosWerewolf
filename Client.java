@@ -442,34 +442,23 @@ public class Client {
 		while(kpuId==0){
 			if (playerId >= players.size() - 1){
 			    boolean success = prepareProposal();
-			    while (!success) {
-			    	prepareProposal();
+			    if(success) {
+			    	acceptProposal();
+			    	// Wait KPU id from server
+			   		readResponse();
+			   		try {
+			    		String method = jsonResponse.getString("method");
+			    		if (method.equals("kpu_selected"))
+			    			kpuId = jsonResponse.getInt("kpu_id"); 
+					} catch (JSONException e) {}
 			    }
-			   	acceptProposal();
-
-			   	// Wait KPU id from server
-			   	readResponse();
-			   	try {
-			    	String method = jsonResponse.getString("method");
-			    	if (method.equals("kpu_selected"))
-			    		kpuId = jsonResponse.getInt("kpu_id"); 
-				} catch (JSONException e) {}
-			    
-
-			    // wait proposal (?)
-			    // if (jawaban)
-			    //nerima kiriman
-			    //itung response
 			}
 			else{
 			    waitProposal();
 			}
 		}
-		// election selesai!!!
-		// startday/night(?);
-		// terima vote_now dari server
-
 	}
+	
 	public void waitProposal() {
 		if (messageQueue[0].size() > 0){
 			try{

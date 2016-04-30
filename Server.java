@@ -28,6 +28,8 @@ public class Server {
     public static ArrayList<String> usernames;
     protected static boolean isRunning;
     protected static boolean isReady;
+    protected static int kpuId;
+    protected static ArrayList<Integer> kpuCounter;
 
     public Server(){
         clients = new ArrayList<ServerThread>();
@@ -36,6 +38,8 @@ public class Server {
         dstPort = 9876; 
         isReady = false;
         isRunning = false;
+        kpuCounter = new ArrayList<Integer>();
+        kpuId =0;
     }
 
     public void run(){

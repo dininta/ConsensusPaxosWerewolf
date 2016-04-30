@@ -35,6 +35,7 @@ public class ServerThread extends Thread {
     protected String role;
     protected String current_time = "day";  // day or night
     protected int counter_day = 1;
+    protected int kpuId;
 
     protected PrintWriter out; 
 
@@ -65,7 +66,6 @@ public class ServerThread extends Thread {
             
             System.out.println("Request: " + request);
             String method = jsonRequest.getString("method");
-            
             sendResponse(method);
 
         } catch (IOException e) {
@@ -106,10 +106,28 @@ public class ServerThread extends Thread {
                 else
                     sendFailResponse("you've ready, game is currently running");
             }
+            else if(method.equals("accepted_proposal")) {
+                acceptProposal();
+            }
             else {
                 sendFailResponse("command not found");
             }
         }
+    }
+
+    //memproses response status dari client
+    public void processStatus(String method) {
+        try{
+            String status = jsonRequest.getString("status");
+            if(status.equals("ok")) {
+                System.out.println("status:" + jsonRequest.getString("status"));
+            } else if(status.equals("fail")) {
+                System.out.println(jsonRequest.getString("status") + ": " + jsonRequest.getString("description"));
+                if(method.equals("start")) {
+                    startGame();
+                }
+            }
+        } catch (org.json.JSONException e) {}
     }
 
     public void disconnect(){
@@ -148,6 +166,8 @@ public class ServerThread extends Thread {
                     //kirim response
                     System.out.println("Sending response: " + jsonResponse.toString());
                     out.println(jsonResponse.toString());
+
+
                 }
             }
             //player sudah pas 6, tunggu dulu
@@ -246,11 +266,48 @@ public class ServerThread extends Thread {
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
 
+            //baca kembalian dari client
+
+            request = in.readLine();
+            jsonRequest = new JSONObject(request);
+            processStatus("start");
+
             // out.println(jsonResponse.toString());
         } catch (org.json.JSONException e) {
             sendErrorResponse();
-        }
+        } catch (IOException e) {}
 
+    }
+
+    public void acceptProposal(){
+        try{
+            //mengambil kpu yang dipilih
+            int id = jsonRequest.getInt("kpu_id");
+            Server.kpuCounter.add(id);
+
+            //mengembalikan list of clients
+            jsonResponse = new JSONObject();
+
+            jsonResponse.put("status", "ok");
+            jsonResponse.put("description", "");
+            System.out.println("Sending response: " + jsonResponse.toString());
+
+
+            //jangan lupa diganti isAlive
+            if(Server.kpuCounter.size() == Server.clients.size()) {
+                Server.kpuId = choosenKpu();
+
+                jsonResponse = new JSONObject();
+
+                jsonResponse.put("method", "kpu_selected");
+                jsonResponse.put("kpu_id", Server.kpuId);
+                System.out.println("Sending response: " + jsonResponse.toString());
+                out.println(jsonResponse.toString());
+            }
+            
+         } catch (org.json.JSONException e) {
+            sendErrorResponse();
+         }                
     }
 
     public void changePhase() {
@@ -370,6 +427,44 @@ public class ServerThread extends Thread {
             }
             else
                 Server.clients.get(i).setRole("civilian");
+        }
+    }
+
+    ///memilih KPU berdasarkan vote 
+    public int choosenKpu(){
+        int candidate1 = 0;
+        int candidate2 = 0;
+        int count1 = 0;
+        int count2 = 0;
+        candidate1 = Server.kpuCounter.get(0);
+        boolean found = false;
+        int i = 1;
+        while(!found && i < Server.kpuCounter.size()){
+            if (Server.kpuCounter.get(i) != candidate1){
+                candidate2 = Server.kpuCounter.get(i);
+                found = true;
+            }
+            i++;
+        }
+        for (int j = 0; j < Server.kpuCounter.size(); j++){
+            if (Server.kpuCounter.get(i) == candidate1){
+                count1++;
+            } else {
+                count2++;
+            }
+        } 
+        if (count1 > count2){
+            return candidate1;
+        } else if (count1 < count2){
+            return candidate2;
+        } else{
+            Random random = new Random();
+            double rand = random.nextDouble();
+            if (rand <= 0.5) {
+                return candidate1;
+            } else {
+                return candidate2;
+            }
         }
     }
 
