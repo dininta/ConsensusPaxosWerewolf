@@ -56,6 +56,7 @@ public class Client {
     protected int udpPort;
     protected String udpAddress;
     protected DatagramSocket datagramSocket;
+    protected DatagramSocket listenSocket;
     protected int kpuPort;
     protected String kpuAddress;
 
@@ -69,18 +70,21 @@ public class Client {
     protected int playerId;
     protected int counterProposal = 0;
     protected ArrayList<Player> players;
+    protected final ArrayList[] messageQueue = new ArrayList[1];
 
     /*** KONSTRUKTOR ***/
-	public Client(){
+	public Client(int port){
 		players = new ArrayList<Player>();
 		isAlive = false;
 
 		try {
 			// UDP Socket
-			udpPort = 9999;
+			udpPort = port;
 			InetAddress inetAddress = InetAddress.getLocalHost();
 			udpAddress = inetAddress.getHostAddress();
 			datagramSocket = new DatagramSocket();
+			listenSocket = new DatagramSocket(udpPort);
+			messageQueue[0] = new ArrayList<String>();
 
 			// TCP Socket
 			dstAddress = "localhost";
@@ -276,7 +280,7 @@ public class Client {
 
 	/*** METHOD FOR PROPOSER ***/
 
-	public void prepareProposal() {
+	/*public void prepareProposal() {
 		// Create json proposal
 		try{
 			jsonRequest = new JSONObject();
@@ -296,10 +300,10 @@ public class Client {
 				datagramSocket.send(sendPacket);
 			}
 		}
-	}
+	}*/
 
 	/*** METHOD FOR WEREWOLF ***/
-
+	/*
 	public void killWerewolfVote() {
 		// Get player ID to be killed
 		BufferedReader inFromuser = new BufferedReader(new InputStreamReader(System.in));
@@ -321,9 +325,9 @@ public class Client {
 		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, kpuAddress, kpuPort);
 		datagramSocket.send(sendPacket);
 	}
-
+	*/
 	/*** METHOD FOR ALL CLIENT EXCEPT KPU ***/
-
+	/*
 	public void killCivilianVote() {
 		// Get player ID to be killed
 		BufferedReader inFromuser = new BufferedReader(new InputStreamReader(System.in));
@@ -345,12 +349,20 @@ public class Client {
 		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, kpuAddress, kpuPort);
 		datagramSocket.send(sendPacket);
 	}
+	*/
 
 	/*** MAIN ***/
 	public static void main(String args[]) throws Exception
 	{
-		Client client = new Client();
 		Scanner sc = new Scanner(System.in);
+		System.out.print("Your PORT: ");
+		int port = Integer.parseInt(sc.nextLine());
+		Client client = new Client(port);
+
+		// start listener thread
+		UDPListenerThread udpListenerThread = new UDPListenerThread(client.listenSocket, client.messageQueue); //mungkin di main
+		udpListenerThread.start();
+
 		System.out.print("Command: ");
 		String input = sc.nextLine();
 		while (true){ // quit loop only by using System.exit(0)

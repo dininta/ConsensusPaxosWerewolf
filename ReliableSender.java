@@ -8,20 +8,21 @@ import java.util.Random;
  * Kelas pembungkus DatagramSocket yang mensimulaiskan paket yang hilang
  * dalam pengiriman.
  */
-public class UnreliableSender
+public class ReliableSender
 {
 	private DatagramSocket datagramSocket;
 	private Random random;
 
-	public UnreliableSender(DatagramSocket datagramSocket) throws SocketException {
+	public ReliableSender(DatagramSocket datagramSocket) throws SocketException {
 		this.datagramSocket = datagramSocket;
 		random = new Random();
 	}
 
 	public void send(DatagramPacket packet) throws IOException {
 		double rand = random.nextDouble();
-		if (rand < 0.85) {
+		/*if (rand < 0.85) {
 			datagramSocket.send(packet);
-		}
+		}*/
+		datagramSocket.send(packet);
 	}
 }
