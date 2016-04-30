@@ -13,10 +13,11 @@ import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
+import java.util.*;
 import java.net.InetAddress;
 
 public class ServerThread extends Thread {
-    public static final int maxPlayer = 2;
+    public static final int maxPlayer = 3;
 
 	protected static String dstAddress;
 	protected static int dstPort;
@@ -30,6 +31,10 @@ public class ServerThread extends Thread {
     protected int port;
     protected Socket socket;
     protected int is_alive;
+    protected boolean isReady;
+    protected String role;
+    protected String current_time = "day";  // day or night
+    protected int counter_day = 1;
 
     protected PrintWriter out; 
 
@@ -42,6 +47,8 @@ public class ServerThread extends Thread {
     	super("ServerThread");
         this.socket = socket;
         is_alive = 0;
+        isReady = false;
+        role = "";
         try{
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true); 
@@ -106,7 +113,7 @@ public class ServerThread extends Thread {
         try{
             //mengecek apakah player sudah 6 
             jsonResponse = new JSONObject();
-            if(Server.clients.size() < maxPlayer) {
+            if(!Server.isRunning) {
                 String name = jsonRequest.getString("username");
                 //if username exists
                 if(Server.usernames.contains(name)) {
@@ -152,9 +159,20 @@ public class ServerThread extends Thread {
             //kirim response
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
+
+            //set isReady dan cek apakah semua player sudah ready
+            this.isReady = true;
+            if(isAllReady()) {
+                generateRole();
+                for(ServerThread player: Server.clients) {
+                    player.startGame();
+                }
+                Server.isRunning = true;
+            }
+                
         } catch (org.json.JSONException e) {
             sendErrorResponse();
-        }
+        } 
     }
 
     //response for method list client
@@ -183,6 +201,81 @@ public class ServerThread extends Thread {
          } catch (org.json.JSONException e) {
             sendErrorResponse();
          }
+    }
+
+    public void startGame(){
+       try {
+            if(role.equals("werewolf")) {
+                //ambil daftar teman
+                JSONArray friends = new JSONArray();
+                for(ServerThread player: Server.clients) {
+                    if(player.getRole().equals("werewolf"))
+                        friends.put(player.getUsername());
+                }
+
+                //kirim info start
+                jsonResponse = new JSONObject();
+                jsonResponse.put("method", "start");
+                jsonResponse.put("time", "day");
+                jsonResponse.put("role", role);
+                jsonResponse.put("friend", friends);
+                jsonResponse.put("description", "game is started");
+
+            } else {
+                jsonResponse = new JSONObject();
+                jsonResponse.put("method", "start");
+                jsonResponse.put("time", "day");
+                jsonResponse.put("role", role);
+                jsonResponse.put("description", "game is started");
+            }
+            
+
+            //kirim response
+            System.out.println("Sending response: " + jsonResponse.toString());
+            
+            // out.println(jsonResponse.toString());
+        } catch (org.json.JSONException e) {
+            sendErrorResponse();
+        }
+
+    }
+
+    public void changePhase() {
+        if (current_time.equals("night")) {
+            current_time = "day";
+            counter_day++;
+        }
+        else {
+            current_time = "night";
+        }
+
+        try{
+            jsonResponse = new JSONObject();
+            jsonResponse.put("method", "change_phase");
+            jsonResponse.put("time", current_time);
+            jsonResponse.put("days", counter_day);
+            jsonResponse.put("description", "");
+
+            //kirim json
+            System.out.println("Sending response: " + jsonResponse.toString());
+            out.println(jsonResponse.toString());
+        } catch (org.json.JSONException e) {
+            sendErrorResponse();
+        }
+    }
+
+    public void vote() {
+        try{
+            jsonResponse = new JSONObject();
+            jsonResponse.put("method", "vote_now");
+            jsonResponse.put("phase", current_time);
+
+            //kirim json
+            System.out.println("Sending response: " + jsonResponse.toString());
+            out.println(jsonResponse.toString());
+        } catch (org.json.JSONException e) {
+            sendErrorResponse();
+        }
     }
 
     //leave
@@ -235,6 +328,39 @@ public class ServerThread extends Thread {
         out.close();
     }
 
+    //melihat apakah semua player sudah ready
+    public boolean isAllReady(){
+        if(Server.clients.size() < maxPlayer)
+            return false;
+        for(ServerThread player : Server.clients) {
+            if(player.getIsReady()==false)
+                return false;
+        }
+        return true;
+    }
+
+
+    //random werewolf dan civilian
+    public void generateRole(){
+        int size = Server.clients.size();
+        ArrayList<Integer> randomList = new ArrayList<Integer>(size);
+        //suffle random number
+        for(int i = 0; i < size; i++)
+        {
+            randomList.add(i);
+        }
+        Collections.shuffle(randomList);
+
+        //create role in each player
+        for(int i=0; i< size; i++) {
+            if(randomList.get(i)==0 || randomList.get(i)==1) {
+                Server.clients.get(i).setRole("werewolf");
+            }
+            else
+                Server.clients.get(i).setRole("civilian");
+        }
+    }
+
     //getter
     public int getPlayerId(){
         return player_id;
@@ -258,6 +384,19 @@ public class ServerThread extends Thread {
 
     public int getAlive(){
         return is_alive;
+    }
+
+    public boolean getIsReady(){
+        return isReady;
+    }
+
+    public String getRole(){
+        return role;
+    }
+
+    //setter
+    public void setRole(String role){
+        this.role = role;
     }
 }
             

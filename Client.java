@@ -68,7 +68,6 @@ public class Client {
     protected String username;
     protected boolean isAlive;
     protected int playerId;
-    protected int counterProposal = 0;
     protected ArrayList<Player> players;
     protected final ArrayList[] messageQueue = new ArrayList[1];
 
@@ -101,8 +100,6 @@ public class Client {
         }
 	}
 
-	/*** METHOD FOR ALL CLIENTS ***/
-
 	public void processCommand(String command){
 		if(command.equals("join")) {
 			 joinGame();
@@ -131,6 +128,7 @@ public class Client {
 			  
 			} catch (JSONException e) {}
 		}
+
 	}
 
 	public void joinGame(){
@@ -161,16 +159,18 @@ public class Client {
 		    if (status.equals("ok")) {
 		    	playerId = jsonResponse.getInt("player_id");
 		    	System.out.println("Your player ID is: " + playerId);
+		    	isAlive = true;
 		    }
 		    else { // status == "fail" or status == "error"
 		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
 		    	
 		    }
 		} catch (JSONException e) {}
+		
 	}
 
 	public void readyUp(){
-		// Send method ready
+	// Send method ready
 		try{
 			jsonRequest = new JSONObject();
 	        jsonRequest.put("method", "ready");
@@ -190,6 +190,7 @@ public class Client {
 		    	
 		    }
 		} catch (JSONException e) {}
+		
 	}
 
 	public void getListClient() {
@@ -205,7 +206,6 @@ public class Client {
 	    try {
 		    String status = jsonResponse.getString("status");
 		    if (status.equals("ok")) {
-		    	players.clear();
 		    	JSONArray clients = jsonResponse.getJSONArray("clients");
 		    	for (int i = 0; i < clients.length(); ++i) {
 				    JSONObject client = clients.getJSONObject(i);
@@ -236,6 +236,7 @@ public class Client {
 		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
 			}
 		} catch (JSONException e) {}
+	    
 	}
 
 	public void readResponse(){
@@ -367,15 +368,23 @@ public class Client {
 		String input = sc.nextLine();
 		while (true){ // quit loop only by using System.exit(0)
 			if(input.equals("quit")) {
-				client.processCommand("leave");
+				if(client.isAlive) {
+					client.processCommand("leave");
+					client.isAlive = false;
+				}
+				else {
+					client.processCommand("leave");
+					client.isAlive = false;
+				}
 				break;
+
 			}
 
 			client.processCommand(input);
 			System.out.print("Command: ");
 			input = sc.nextLine();
 
-			//aku comment dulu ya, kalau dibutuhin uncomment aja - zulva
+			//aku comment dulu ya, kalau dibutuhin uncomment
 			// gameplay:
 			// for (int i = 1; i <= 1; i++){ // one dummy loop
 			// 	// join game
