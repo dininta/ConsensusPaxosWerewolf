@@ -63,11 +63,14 @@ public class Client {
     protected String request; //new
 	protected String response;
     protected String username;
+    protected boolean isAlive;
     protected int playerId;
     protected ArrayList<Player> players;
 
 	public Client(){
 		players = new ArrayList<Player>();
+		isAlive = false;
+
 		try {
 			// UDP Socket
 			udpPort = 9999;
@@ -90,7 +93,38 @@ public class Client {
         }
 	}
 
-	public int joinGame(){
+	public void processCommand(String command){
+		if(command.equals("join")) {
+			 joinGame();
+		} else if(command.equals("ready")) {
+			 readyUp();
+		} else if(command.equals("client_address")) {
+			 getListClient();
+		} else if(command.equals("leave")) {
+			 leave();
+		} else{
+			//command tidak dikenali
+			try{
+				jsonRequest = new JSONObject();
+	        	jsonRequest.put("method", command);
+        	} catch (org.json.JSONException e) {}
+	    	
+	    	// Send json
+	    	System.out.println("Sending request: " + jsonRequest.toString());
+	    	out.println(jsonRequest.toString());
+			
+			// Receive response
+	    	readResponse();
+	    	try {
+			    	String status = jsonResponse.getString("status");
+			    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
+			  
+			} catch (JSONException e) {}
+		}
+
+	}
+
+	public void joinGame(){
 		// Get username
 		BufferedReader inFromuser = new BufferedReader(new InputStreamReader(System.in));
 		System.out.print("Username: ");
@@ -118,17 +152,17 @@ public class Client {
 		    if (status.equals("ok")) {
 		    	playerId = jsonResponse.getInt("player_id");
 		    	System.out.println("Your player ID is: " + playerId);
-		    	return 0;
+		    	isAlive = true;
 		    }
 		    else { // status == "fail" or status == "error"
 		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
-		    	return 1;
+		    	
 		    }
 		} catch (JSONException e) {}
-		return 1;
+		
 	}
 
-	public int readyUp(){
+	public void readyUp(){
 	// Send method ready
 		try{
 			jsonRequest = new JSONObject();
@@ -142,14 +176,14 @@ public class Client {
 		    String status = jsonResponse.getString("status");
 		    if (status.equals("ok")) {
 		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
-		    	return 0;
+		    	
 		    }
 		    else { // status == "fail" or status == "error"
 		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
-		    	return 1;
+		    	
 		    }
 		} catch (JSONException e) {}
-		return 1;
+		
 	}
 
 	public void getListClient() {
@@ -215,6 +249,18 @@ public class Client {
 	        jsonRequest.put("method", "leave");
 	    } catch (org.json.JSONException e) {}
 		out.println(jsonRequest.toString());
+		readResponse();
+		try {
+		    String status = jsonResponse.getString("status");
+		    if (status.equals("ok")) {
+		    	System.out.println("status: " + jsonResponse.getString("status"));
+		    	disconnect();
+		    }
+		    else { // status == "fail" or status == "error"
+		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
+		    	
+		    }
+		} catch (JSONException e) {}
     }
 
 	public void disconnect(){
@@ -230,44 +276,64 @@ public class Client {
 	{
 		Client client = new Client();
 		Scanner sc = new Scanner(System.in);
+		System.out.print("Command: ");
+		String input = sc.nextLine();
 		while (true){ // quit loop only by using System.exit(0)
-			gameplay:
-			for (int i = 1; i <= 1; i++){ // one dummy loop
-				// join game
-				System.out.print("Command utama: ");
-				String input = sc.nextLine();
-				while (!input.equals("join")){ // if method != "join" then repeat
-					if (input.equals("quit")){
-						client.disconnect();
-						System.exit(0);
-					}
-					System.out.println("Unknown command: " + input + "!!!");
-					System.out.print("Command: ");
-					input = sc.nextLine();
+			if(input.equals("quit")) {
+				if(client.isAlive) {
+					client.processCommand("leave");
+					client.isAlive = false;
 				}
-				while (client.joinGame() != 0){ // if status != "ok" then repeat
-					// nothing
+				else {
+					client.processCommand("leave");
+					client.isAlive = false;
 				}
+				break;
 
-				// ready up
-				while (client.readyUp() != 0){ // if status != "ok" then repeat
-					// nothing
-				}
-
-				// list client
-				System.out.print("Command: ");
-				input = sc.nextLine();
-				while (!input.equals("client_address")){ // if method != "join" then repeat
-					if (input.equals("leave")){
-						client.leave(); // leave belum bisa looping
-						break gameplay;
-					}
-					System.out.println("Unknown command: " + input + "!!!");
-					System.out.print("Command: ");
-					input = sc.nextLine();
-				}
-				client.getListClient();
 			}
+
+			client.processCommand(input);
+			System.out.print("Command: ");
+			input = sc.nextLine();
+
+			//aku comment dulu ya, kalau dibutuhin uncomment aja - zulva
+			// gameplay:
+			// for (int i = 1; i <= 1; i++){ // one dummy loop
+			// 	// join game
+			// 	System.out.print("Command utama: ");
+			// 	String input = sc.nextLine();
+			// 	while (!input.equals("join")){ // if method != "join" then repeat
+			// 		if (input.equals("quit")){
+			// 			client.disconnect();
+			// 			System.exit(0);
+			// 		}
+			// 		System.out.println("Unknown command: " + input + "!!!");
+			// 		System.out.print("Command: ");
+			// 		input = sc.nextLine();
+			// 	}
+			// 	while (client.joinGame() != 0){ // if status != "ok" then repeat
+			// 		// nothing
+			// 	}
+
+			// 	// ready up
+			// 	while (client.readyUp() != 0){ // if status != "ok" then repeat
+			// 		// nothing
+			// 	}
+
+			// 	// list client
+			// 	System.out.print("Command: ");
+			// 	input = sc.nextLine();
+			// 	while (!input.equals("client_address")){ // if method != "join" then repeat
+			// 		if (input.equals("leave")){
+			// 			client.leave(); // leave belum bisa looping
+			// 			break gameplay;
+			// 		}
+			// 		System.out.println("Unknown command: " + input + "!!!");
+			// 		System.out.print("Command: ");
+			// 		input = sc.nextLine();
+			// 	}
+			// 	client.getListClient();
+			// }
 		}
 	}
 }

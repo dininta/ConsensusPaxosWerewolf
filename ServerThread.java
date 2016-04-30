@@ -75,6 +75,9 @@ public class ServerThread extends Thread {
             if(method.equals("join")) {
                 joinGame();
             }
+            else if(method.equals("leave")) {
+                leave();
+            }
             else {
                 sendFailResponse("please join first");
             }
@@ -91,6 +94,9 @@ public class ServerThread extends Thread {
             }
             else if(method.equals("ready")) {
                 sendReadyResponse();
+            }
+            else {
+                sendFailResponse("command not found");
             }
         }
     }
@@ -139,11 +145,6 @@ public class ServerThread extends Thread {
     public void sendReadyResponse(){
         //nunggu sampai semua jumlah player sudah mencapai max
         try{
-            while(Server.clients.size() < maxPlayer)
-                sleep(500);
-        } catch (InterruptedException e){}
-
-        try{
             jsonResponse = new JSONObject();
             jsonResponse.put("status", "ok");
             jsonResponse.put("description", "waiting for other player to start");
@@ -186,7 +187,18 @@ public class ServerThread extends Thread {
 
     //leave
     public void leave(){
-        running = false;
+        try {
+            jsonResponse = new JSONObject();
+            jsonResponse.put("status", "ok");
+            //kirim response
+            System.out.println("Sending response: " + jsonResponse.toString());
+            out.println(jsonResponse.toString());
+            running = false;
+            is_alive = 0;
+        } catch (org.json.JSONException e) {
+            sendErrorResponse();
+        }
+
     }
 
     //response untuk request yang tidak sesuai kebutuhan
@@ -200,7 +212,7 @@ public class ServerThread extends Thread {
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
         } catch (org.json.JSONException e) {
-            sendReadyResponse();
+            sendErrorResponse();
         }
     }
 
