@@ -1,3 +1,4 @@
+import org.json.*;
 import java.net.DatagramSocket;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
@@ -22,7 +23,15 @@ public class UDPListenerThread extends Thread {
 				serverSocket.receive(receivePacket);
 			} catch (IOException e) {}
 
-			messageQueue[0].add(new String(receivePacket.getData(), 0, receivePacket.getLength()));
+			// Get sender address and port
+			try {
+				String message = new String(receivePacket.getData(), 0, receivePacket.getLength());
+				JSONObject obj = new JSONObject(message);
+				obj.put("udp_address", receivePacket.getAddress());
+				obj.put("udp_port", receivePacket.getPort());
+				messageQueue[0].add(obj.toString());
+				System.out.println("Received: " + messageQueue[0].get(messageQueue[0].size()-1));
+			} catch (JSONException e) {}
 		}
     }
 
