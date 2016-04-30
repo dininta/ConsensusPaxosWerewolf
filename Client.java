@@ -215,6 +215,7 @@ public class Client {
 		    	}
 				jsonRequest = new JSONObject();
 			    jsonRequest.put("status", "ok");
+
 			    out.println(jsonRequest.toString());
 			    startElection();
 			    

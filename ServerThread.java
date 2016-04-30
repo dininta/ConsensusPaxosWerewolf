@@ -36,6 +36,7 @@ public class ServerThread extends Thread {
     protected String current_time = "day";  // day or night
     protected int counter_day = 1;
     protected int kpuId;
+    protected String lastMethod;
 
     protected PrintWriter out; 
 
@@ -49,6 +50,7 @@ public class ServerThread extends Thread {
         this.socket = socket;
         is_alive = 0;
         isReady = false;
+        lastMethod = "";
         role = "";
         try{
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -63,10 +65,16 @@ public class ServerThread extends Thread {
 
             request = in.readLine();
             jsonRequest = new JSONObject(request);
+             System.out.println("Request: " + request);
             
-            System.out.println("Request: " + request);
-            String method = jsonRequest.getString("method");
-            sendResponse(method);
+            if(jsonRequest.has("method")) {
+                String method = jsonRequest.getString("method");
+                sendResponse(method);
+            } else if(jsonRequest.has("status")) {
+                String status = jsonRequest.getString("status");
+                processStatus(status);
+            }
+           
 
         } catch (IOException e) {
             sendErrorResponse();
@@ -116,16 +124,13 @@ public class ServerThread extends Thread {
     }
 
     //memproses response status dari client
-    public void processStatus(String method) {
+    public void processStatus(String status) {
         try{
-            String status = jsonRequest.getString("status");
-            if(status.equals("ok")) {
+            if(status.equals("ok"))
                 System.out.println("status:" + jsonRequest.getString("status"));
-            } else if(status.equals("fail")) {
-                System.out.println(jsonRequest.getString("status") + ": " + jsonRequest.getString("description"));
-                if(method.equals("start")) {
+            else if(status.equals("fail")) {
+                if(lastMethod.equals("start"))
                     startGame();
-                }
             }
         } catch (org.json.JSONException e) {}
     }
@@ -235,7 +240,7 @@ public class ServerThread extends Thread {
          }
     }
 
-    public void startGame(){
+    public synchronized void startGame(){
        try {
             if(role.equals("werewolf")) {
                 //ambil daftar teman
@@ -267,15 +272,15 @@ public class ServerThread extends Thread {
             out.println(jsonResponse.toString());
 
             //baca kembalian dari client
-
-            request = in.readLine();
-            jsonRequest = new JSONObject(request);
-            processStatus("start");
+            lastMethod = "start";
+            // request = in.readLine();
+            // jsonRequest = new JSONObject(request);
+            // processStatus("start");
 
             // out.println(jsonResponse.toString());
         } catch (org.json.JSONException e) {
             sendErrorResponse();
-        } catch (IOException e) {}
+        } 
 
     }
 
