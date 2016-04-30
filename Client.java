@@ -71,6 +71,7 @@ public class Client {
     protected int counterProposal = 0;
     protected ArrayList<Player> players;
     protected final ArrayList[] messageQueue = new ArrayList[1];
+	protected int werewolfVote[];
 
     /*** KONSTRUKTOR ***/
 	public Client(int port){
@@ -110,6 +111,8 @@ public class Client {
 			 getListClient();
 		} else if(command.equals("leave")) {
 			 leave();
+		} else if (command.equals("send_proposal")) {
+			prepareProposal();
 		} else{
 			//command tidak dikenali
 			try{
@@ -171,7 +174,7 @@ public class Client {
 	}
 
 	public void readyUp(){
-	// Send method ready
+		// Send method ready
 		try{
 			jsonRequest = new JSONObject();
 	        jsonRequest.put("method", "ready");
@@ -307,6 +310,31 @@ public class Client {
 		}
 	}
 
+	public void acceptProposal() {
+		// Create json proposal
+		try{
+			jsonRequest = new JSONObject();
+	        jsonRequest.put("method", "accept_proposal");
+	        JSONArray proposal_id = new JSONArray();
+	        proposal_id.put(counterProposal);
+	        proposal_id.put(playerId);
+	        jsonRequest.put("proposal_id", proposal_id);
+	        jsonRequest.put("kpu_id", playerId);
+	    } catch (org.json.JSONException e) {}
+
+	    // Send json to every acceptor
+		byte[] sendData = jsonRequest.toString().getBytes();
+		for (int i=0; i<players.size(); i++) {
+			if (players.get(i).playerId != playerId && players.get(i).isAlive == 1) {
+				try {
+					DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(players.get(i).address), players.get(i).port);
+					datagramSocket.send(sendPacket);
+				} catch (UnknownHostException e){
+				} catch (IOException e){}
+			}
+		}
+	}
+
 	/*** METHOD FOR WEREWOLF ***/
 	
 	public void killWerewolfVote() {
@@ -334,7 +362,7 @@ public class Client {
 		} catch (IOException e){}
 	}
 	
-	/*** METHOD FOR ALL CLIENT EXCEPT KPU ***/
+	/*** METHOD FOR ACCEPTOR ***/
 	
 	public void killCivilianVote() {
 		// Get player ID to be killed
@@ -359,6 +387,38 @@ public class Client {
 			datagramSocket.send(sendPacket);
 		} catch (UnknownHostException e){
 		} catch (IOException e){}
+	}
+
+	/*** METHOD FOR KPU ***/
+
+	public void calculateWerewolfVote() {
+		// Menghitung hasil voting dari werewolf
+
+		// Initialize array
+		werewolfVote = null;
+		werewolfVote = new int[players.size() + 1];
+		for (int i=0; i< werewolfVote.length; i++)
+			werewolfVote[i] = 0;
+
+		// Read message from listener
+		while (messageQueue[0].size() > 0) {
+			try {
+				JSONObject vote = new JSONObject((String) messageQueue[0].remove(0));
+				String method = vote.getString("method");
+				if (method.equals("vote_werewolf")) {
+					int targetId = vote.getInt("player_id");
+					werewolfVote[targetId]++;
+				}
+				else {
+
+				}
+			} catch (JSONException e) {}
+		}
+
+		// Get maximum
+		int max = werewolfVote[0];
+
+
 	}
 	
 
