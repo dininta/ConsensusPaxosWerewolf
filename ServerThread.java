@@ -37,6 +37,7 @@ public class ServerThread extends Thread {
     protected int counter_day = 1;
     protected int kpuId;
     protected String lastMethod;
+    protected static boolean changePhase = false;
 
     protected PrintWriter out; 
 
@@ -117,6 +118,10 @@ public class ServerThread extends Thread {
             else if(method.equals("accepted_proposal")) {
                 acceptProposal();
             }
+            else if(method.equals("vote_result_civilian")) {
+                voteCivilian();
+                changePhase = true;
+            }
             else {
                 sendFailResponse("command not found");
             }
@@ -126,8 +131,18 @@ public class ServerThread extends Thread {
     //memproses response status dari client
     public void processStatus(String status) {
         try{
-            if(status.equals("ok"))
-                System.out.println("status:" + jsonRequest.getString("status"));
+            if(status.equals("ok")) {
+                if (lastMethod.equals("sendChoosenKpu")) {
+                    System.out.println("status:" + jsonRequest.getString("status"));
+                    vote();
+                }
+                if (lastMethod.equals("changePhase")) {
+                    System.out.println("status:" + jsonRequest.getString("status"));
+                    vote();
+                }
+                else
+                    System.out.println("status:" + jsonRequest.getString("status"));
+            }
             else if(status.equals("fail")) {
                 if(lastMethod.equals("start"))
                     startGame();
@@ -314,6 +329,30 @@ public class ServerThread extends Thread {
          }                
     }
 
+    public void voteCivilian() {
+
+        try {
+            // lihat statusnya
+            int status = jsonRequest.getInt("vote_status");
+            if (status == 1) {
+                for(ServerThread player: Server.clients) {
+                    if(player.getPlayerId() == jsonRequest.getInt("player_killed"))
+                        player.kill();
+                }
+            }
+
+            // send response to KPU
+            jsonResponse = new JSONObject();
+            jsonResponse.put("status", "ok");
+            jsonResponse.put("description", "");
+            System.out.println("Sending response: " + jsonResponse.toString());
+            out.println(jsonResponse.toString());
+
+        } catch (org.json.JSONException e) {
+            sendErrorResponse();
+        }
+    }
+
     public void changePhase() {
         if (current_time.equals("night")) {
             current_time = "day";
@@ -333,9 +372,12 @@ public class ServerThread extends Thread {
             //kirim json
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
+
+            lastMethod = "changePhase";
         } catch (org.json.JSONException e) {
             sendErrorResponse();
         }
+        changePhase = false;
     }
 
     public void vote() {
@@ -371,14 +413,15 @@ public class ServerThread extends Thread {
     public void sendChoosenKpu(){
         try {
             jsonResponse = new JSONObject();
-
-
             jsonResponse.put("method", "kpu_selected");
             jsonResponse.put("kpu_id", Server.kpuId);
             
             //kirim response
             System.out.println(" Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
+
+            lastMethod = "sendChoosenKpu";
+            changePhase();
         } catch (org.json.JSONException e) {
             sendErrorResponse();
         }
@@ -413,8 +456,13 @@ public class ServerThread extends Thread {
     }
     
     public void run(){
-        while (running)
+        while (running) {
     	   readRequest();
+           if (changePhase) {
+                // ganti fase
+                changePhase();
+           }
+        }
         out.close();
     }
 
@@ -493,6 +541,11 @@ public class ServerThread extends Thread {
             return candidate1;
         }
 
+    }
+
+    //setter
+    public void kill() {
+        is_alive = 0;
     }
 
     //getter

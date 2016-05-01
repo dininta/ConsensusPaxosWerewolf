@@ -155,6 +155,16 @@ public class Client {
 		return count;
 	}
 
+	public int werewolfActive() {
+		// Return the number of active werewolf
+		int count = 0;
+		for (int i=0; i<players.size(); i++)
+			if (players.get(i).role.equals("werewolf"))
+				count++;
+		count = 2 - count;
+		return count;
+	}
+
 	public void joinGame(){
 		// Get username
 		BufferedReader inFromuser = new BufferedReader(new InputStreamReader(System.in));
@@ -234,14 +244,112 @@ public class Client {
 
 			    System.out.println("IN STARTGAME Request: " + jsonRequest.toString());
 			    out.println(jsonRequest.toString());
-			    getListClient(true);
-			    startElection();
+			    startPlaying();
 			    
 		    }
 		    else { // status == "fail" or status == "error"
 		    	System.out.println("ERROR!!!");
 		    	//System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
 		    }
+		} catch (JSONException e) {}
+	}
+
+	public void startElection(){
+		messageQueue[0].clear();
+		//cuma buat print doang
+		boolean cek =true;
+
+		System.out.println("IN STARTELECTION");
+		System.out.println("KPUID: " + kpuId);
+		while (kpuId==0){
+			//System.out.println("KPUID: " + kpuId);
+			if (playerId >= players.size() - 1){//ntar jadi players.size() yhaa
+				System.out.println("I'm proposer");
+			    boolean success = prepareProposal();
+			    if(success) {
+			    	System.out.println("success");
+			    	acceptProposal();
+			    	// Wait KPU id from server
+			    	System.out.println("menunggu respon");
+			   		readResponse();
+			   		System.out.println("Response:" + jsonResponse.toString());
+			   		try {
+			    		String method = jsonResponse.getString("method");
+			    		if (method.equals("kpu_selected"))
+			    			kpuId = jsonResponse.getInt("kpu_id"); 
+					} catch (JSONException e) {}
+			    } else{
+			    	System.out.println("tidak success");
+			    }
+			}
+			else{
+				//cuma buat print 
+				if(cek){
+					System.out.println("I'm acceptor");
+					cek = false;
+				}	
+			    waitProposal();
+			}
+		}
+		System.out.println("KPU terpilih: " + kpuId);
+		boolean found = false;
+		int i = 0;
+		while (!found) {
+			if (players.get(i).playerId == kpuId) {
+				found = true;
+				try {
+					kpuAddress = InetAddress.getByName(players.get(i).address);
+					kpuPort = players.get(i).port;
+				} catch (UnknownHostException e) {}
+			}
+			i++;
+		}
+		messageQueue[0].clear();
+
+		// send response to server
+		try {
+			jsonRequest = new JSONObject();
+			jsonRequest.put("status", "ok");
+			jsonRequest.put("description", "");
+			System.out.println("AFTER DAPET KPU Request: " + jsonRequest.toString());
+			out.println(jsonRequest.toString());
+		} catch (JSONException e) {}
+	}
+
+	public void startPlaying() {
+		while (isAlive) {
+			getListClient(true);
+			startElection();
+			// day
+			waitToVote();
+			// change phase
+			changePhase();
+			getListClient(true);
+			if (!isAlive)
+				break;
+
+			// night
+			waitToVote();
+		}
+			
+	}
+
+	public void changePhase() {
+		// Get from server
+		System.out.println("Waiting for change phase");
+		readResponse();
+		try {
+			String method = jsonResponse.getString("method");
+			if (method.equals("change_phase")) {
+		    	time = jsonResponse.getString("time");
+			}
+
+			System.out.println("Change phase. Now is " + time);
+
+			// send back to server
+			jsonRequest = new JSONObject();
+			jsonRequest.put("status", "ok");
+			out.println(jsonRequest.toString());
 		} catch (JSONException e) {}
 	}
 
@@ -296,6 +404,226 @@ public class Client {
 		} catch (JSONException e) {}
 	    
 	}
+
+	public void waitToVote() {
+		// Get from server
+		readResponse();
+		try {
+			String method = jsonResponse.getString("method");
+			if (method.equals("vote_now")) {
+				if (time.equals("day")) {
+					killCivilianVote();
+					if (kpuId == playerId)
+						calculateCivilianVote();
+				}
+				else {	// time == "night"
+					boolean consensus = false;
+					while (!consensus) {
+						if (role.equals("werewolf"))
+							killWerewolfVote();
+						else
+							System.out.println("It's night. Waiting...");
+						if (kpuId == playerId)
+							consensus = calculateWerewolfVote();
+					}
+				}
+			}
+		} catch (JSONException e) {}
+	}
+
+	public void readResponse(){
+        try{
+            response = in.readLine();
+            jsonResponse = new JSONObject(response);
+        } catch (IOException e) {
+            e.printStackTrace();
+            response = "IOException: " + e.toString();
+        } catch (org.json.JSONException e) {}
+    }
+
+    public void leave(){
+		try{
+			jsonRequest = new JSONObject();
+	        jsonRequest.put("method", "leave");
+	    } catch (org.json.JSONException e) {}
+		out.println(jsonRequest.toString());
+		readResponse();
+		try {
+		    String status = jsonResponse.getString("status");
+		    if (status.equals("ok")) {
+		    	System.out.println("status: " + jsonResponse.getString("status"));
+		    	isAlive = false;
+		    }
+		    else { // status == "fail" or status == "error"
+		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
+		    	
+		    }
+		} catch (JSONException e) {}
+    }
+
+	public void disconnect(){
+		try {
+	        socket.close();
+	        out.close();
+	        datagramSocket.close();
+        } catch (IOException e) {e.printStackTrace();}
+	}
+
+	public void killCivilianVote() {
+		// Get player ID to be killed
+		BufferedReader inFromuser = new BufferedReader(new InputStreamReader(System.in));
+		System.out.print("Which werewolf do you want to kill? Insert player id: ");
+		int target = 0;
+		try {
+			target = Integer.parseInt(inFromuser.readLine());
+		} catch (IOException e) {}
+
+		// Create json
+		try{
+			jsonRequest = new JSONObject();
+	        jsonRequest.put("method", "vote_civilian");
+	        jsonRequest.put("player_id", target);
+	    } catch (org.json.JSONException e) {}
+
+	    // Send json to KPU
+		byte[] sendData = jsonRequest.toString().getBytes();
+		try {
+			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, kpuAddress, kpuPort);
+			datagramSocket.send(sendPacket);
+		} catch (UnknownHostException e){
+		} catch (IOException e){}
+	}
+
+	/*** METHOD FOR PROPOSER ***/
+
+	public boolean prepareProposal() {
+		System.out.println("Prepare Proposal");
+		// Create json proposal
+		try{
+			jsonRequest = new JSONObject();
+	        jsonRequest.put("method", "prepare_proposal");
+	        JSONArray proposal_id = new JSONArray();
+	        counterProposal++;
+	        proposal_id.put(counterProposal);
+	        proposal_id.put(playerId);
+	        jsonRequest.put("proposal_id", proposal_id);
+	    } catch (org.json.JSONException e) {}
+
+	    // Send json to every acceptor
+	    System.out.println("UDP Request: " + jsonRequest);
+		byte[] sendData = jsonRequest.toString().getBytes();
+		for (int i=0; i<players.size(); i++) {
+			if (players.get(i).playerId != playerId && players.get(i).isAlive == 1) {
+				try {
+					DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(players.get(i).address), players.get(i).port);
+					datagramSocket.send(sendPacket);
+				} catch (UnknownHostException e){
+				} catch (IOException e){}
+			}
+		}
+
+		int counterAccepted = 0;
+	    int counterRejected = 0;
+	    //boolean timeout = false;
+	    checkTimeout = new CheckTimeout(maxTime);
+	    while (!checkTimeout.isTimeout() && ((counterAccepted < playersActive()/2) && (counterRejected < playersActive()/2))){
+		    if (messageQueue[0].size() > 0) {
+		    	String response = messageQueue[0].remove(0).toString();
+		    	try {
+		    		jsonResponse = new JSONObject (response);
+		    		if (jsonResponse.getString("status").equals("ok")){
+		    			counterAccepted++;
+		    		} else {
+		    			counterRejected++;
+		    		}
+		    	} catch (org.json.JSONException e) {}
+	    	}
+		}	
+		if (checkTimeout.isTimeout()){
+			return false;
+		}
+		else if (counterAccepted == counterRejected){
+			return false;
+		} 
+		else if (counterAccepted >= playersActive()/2) {
+			return true;
+		}
+		else if (counterRejected >= playersActive()/2) {
+			return false;
+		} else {
+			return false;
+		}
+	}
+
+	public void acceptProposal() {
+		System.out.println("IN ACCEPTPROPOSAL");
+		// Create json proposal
+		try{
+			jsonRequest = new JSONObject();
+	        jsonRequest.put("method", "accept_proposal");
+	        JSONArray proposal_id = new JSONArray();
+	        proposal_id.put(counterProposal);
+	        proposal_id.put(playerId);
+	        jsonRequest.put("proposal_id", proposal_id);
+	        jsonRequest.put("kpu_id", playerId);
+	        System.out.println("PROPOSAL ID" + jsonRequest.toString());
+	    } catch (org.json.JSONException e) {}
+
+	    // Send json to every acceptor
+	    System.out.println("UDP Request: " + jsonRequest);
+		byte[] sendData = jsonRequest.toString().getBytes();
+		for (int i=0; i<players.size(); i++) {
+			if (players.get(i).playerId != playerId && players.get(i).isAlive == 1) {
+				try {
+					DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(players.get(i).address), players.get(i).port);
+					datagramSocket.send(sendPacket);
+				} catch (UnknownHostException e){
+				} catch (IOException e){}
+			}
+		}
+
+		
+		//boolean timeout = false;
+		checkTimeout = new CheckTimeout(maxTime);
+	    while (!checkTimeout.isTimeout()){
+		    if (messageQueue[0].size() > 0) {
+		    	String response = messageQueue[0].remove(0).toString();
+		    	System.out.println("Acceptor Response: " + response);
+		    	try {
+		    		jsonResponse = new JSONObject (response);
+		    	} catch (org.json.JSONException e) {}
+	    	}
+		}
+	}
+
+	/*** METHOD FOR WEREWOLF ***/
+	
+	public void killWerewolfVote() {
+		// Get player ID to be killed
+		BufferedReader inFromuser = new BufferedReader(new InputStreamReader(System.in));
+		System.out.print("Which player do you want to kill? Insert player id: ");
+		int target = 0;
+		try {
+			target = Integer.parseInt(inFromuser.readLine());
+		} catch (IOException e) {}
+
+		// Create json
+		try{
+			jsonRequest = new JSONObject();
+	        jsonRequest.put("method", "vote_werewolf");
+	        jsonRequest.put("player_id", target);
+	    } catch (org.json.JSONException e) {}
+
+	    // Send json to KPU
+		byte[] sendData = jsonRequest.toString().getBytes();
+		try {
+			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, kpuAddress, kpuPort);
+			datagramSocket.send(sendPacket);
+		} catch (UnknownHostException e){
+		} catch (IOException e){}
+	}
+	
+	/*** METHOD FOR ACCEPTOR ***/
 
 	public void waitProposal() {
 		
@@ -438,241 +766,6 @@ public class Client {
 		}
 	}
 
-	public void readResponse(){
-        try{
-            response = in.readLine();
-            jsonResponse = new JSONObject(response);
-        } catch (IOException e) {
-            e.printStackTrace();
-            response = "IOException: " + e.toString();
-        } catch (org.json.JSONException e) {}
-    }
-
-    public void leave(){
-		try{
-			jsonRequest = new JSONObject();
-	        jsonRequest.put("method", "leave");
-	    } catch (org.json.JSONException e) {}
-		out.println(jsonRequest.toString());
-		readResponse();
-		try {
-		    String status = jsonResponse.getString("status");
-		    if (status.equals("ok")) {
-		    	System.out.println("status: " + jsonResponse.getString("status"));
-		    	isAlive = false;
-		    }
-		    else { // status == "fail" or status == "error"
-		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
-		    	
-		    }
-		} catch (JSONException e) {}
-    }
-
-	public void disconnect(){
-		try {
-	        socket.close();
-	        out.close();
-	        datagramSocket.close();
-        } catch (IOException e) {e.printStackTrace();}
-	}
-
-	/*** METHOD FOR PROPOSER ***/
-
-	public boolean prepareProposal() {
-		System.out.println("Prepare Proposal");
-		// Create json proposal
-		try{
-			jsonRequest = new JSONObject();
-	        jsonRequest.put("method", "prepare_proposal");
-	        JSONArray proposal_id = new JSONArray();
-	        counterProposal++;
-	        proposal_id.put(counterProposal);
-	        proposal_id.put(playerId);
-	        jsonRequest.put("proposal_id", proposal_id);
-	    } catch (org.json.JSONException e) {}
-
-	    // Send json to every acceptor
-	    System.out.println("UDP Request: " + jsonRequest);
-		byte[] sendData = jsonRequest.toString().getBytes();
-		for (int i=0; i<players.size(); i++) {
-			if (players.get(i).playerId != playerId && players.get(i).isAlive == 1) {
-				try {
-					DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(players.get(i).address), players.get(i).port);
-					datagramSocket.send(sendPacket);
-				} catch (UnknownHostException e){
-				} catch (IOException e){}
-			}
-		}
-
-		int counterAccepted = 0;
-	    int counterRejected = 0;
-	    //boolean timeout = false;
-	    checkTimeout = new CheckTimeout(maxTime);
-	    while (!checkTimeout.isTimeout() && ((counterAccepted < playersActive()/2) && (counterRejected < playersActive()/2))){
-		    if (messageQueue[0].size() > 0) {
-		    	String response = messageQueue[0].remove(0).toString();
-		    	try {
-		    		jsonResponse = new JSONObject (response);
-		    		if (jsonResponse.getString("status").equals("ok")){
-		    			counterAccepted++;
-		    		} else {
-		    			counterRejected++;
-		    		}
-		    	} catch (org.json.JSONException e) {}
-	    	}
-		}	
-		if (checkTimeout.isTimeout()){
-			return false;
-		}
-		else if (counterAccepted == counterRejected){
-			return false;
-		} 
-		else if (counterAccepted >= playersActive()/2) {
-			return true;
-		}
-		else if (counterRejected >= playersActive()/2) {
-			return false;
-		} else {
-			return false;
-		}
-	}
-
-	public void acceptProposal() {
-		System.out.println("IN ACCEPTPROPOSAL");
-		// Create json proposal
-		try{
-			jsonRequest = new JSONObject();
-	        jsonRequest.put("method", "accept_proposal");
-	        JSONArray proposal_id = new JSONArray();
-	        proposal_id.put(counterProposal);
-	        proposal_id.put(playerId);
-	        jsonRequest.put("proposal_id", proposal_id);
-	        jsonRequest.put("kpu_id", playerId);
-	        System.out.println("PROPOSAL ID" + jsonRequest.toString());
-	    } catch (org.json.JSONException e) {}
-
-	    // Send json to every acceptor
-	    System.out.println("UDP Request: " + jsonRequest);
-		byte[] sendData = jsonRequest.toString().getBytes();
-		for (int i=0; i<players.size(); i++) {
-			if (players.get(i).playerId != playerId && players.get(i).isAlive == 1) {
-				try {
-					DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(players.get(i).address), players.get(i).port);
-					datagramSocket.send(sendPacket);
-				} catch (UnknownHostException e){
-				} catch (IOException e){}
-			}
-		}
-
-		
-		//boolean timeout = false;
-		checkTimeout = new CheckTimeout(maxTime);
-	    while (!checkTimeout.isTimeout()){
-		    if (messageQueue[0].size() > 0) {
-		    	String response = messageQueue[0].remove(0).toString();
-		    	System.out.println("Acceptor Response: " + response);
-		    	try {
-		    		jsonResponse = new JSONObject (response);
-		    	} catch (org.json.JSONException e) {}
-	    	}
-		}
-	}
-
-	/*** METHOD FOR WEREWOLF ***/
-	
-	public void killWerewolfVote() {
-		// Get player ID to be killed
-		BufferedReader inFromuser = new BufferedReader(new InputStreamReader(System.in));
-		System.out.print("Which player do you want to kill? Insert player id: ");
-		int target = 0;
-		try {
-			target = Integer.parseInt(inFromuser.readLine());
-		} catch (IOException e) {}
-
-		// Create json
-		try{
-			jsonRequest = new JSONObject();
-	        jsonRequest.put("method", "vote_werewolf");
-	        jsonRequest.put("player_id", target);
-	    } catch (org.json.JSONException e) {}
-
-	    // Send json to KPU
-		byte[] sendData = jsonRequest.toString().getBytes();
-		try {
-			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, kpuAddress, kpuPort);
-			datagramSocket.send(sendPacket);
-		} catch (UnknownHostException e){
-		} catch (IOException e){}
-	}
-	
-	/*** METHOD FOR ACCEPTOR ***/
-
-	public void startElection(){
-		//cuma buat print doang
-		boolean cek =true;
-
-		System.out.println("IN STARTELECTION");
-		System.out.println("KPUID: " + kpuId);
-		while (kpuId==0){
-			//System.out.println("KPUID: " + kpuId);
-			if (playerId >= players.size() - 1){//ntar jadi players.size() yhaa
-				System.out.println("I'm proposer");
-			    boolean success = prepareProposal();
-			    if(success) {
-			    	System.out.println("success");
-			    	acceptProposal();
-			    	// Wait KPU id from server
-			    	System.out.println("menunggu respon");
-			   		readResponse();
-			   		System.out.println("Response:" + jsonResponse.toString());
-			   		try {
-			    		String method = jsonResponse.getString("method");
-			    		if (method.equals("kpu_selected"))
-			    			kpuId = jsonResponse.getInt("kpu_id"); 
-					} catch (JSONException e) {}
-			    } else{
-			    	System.out.println("tidak success");
-			    }
-			}
-			else{
-				//cuma buat print 
-				if(cek){
-					System.out.println("I'm acceptor");
-					cek = false;
-				}	
-			    waitProposal();
-			}
-		}
-		System.out.println("KPU terpilih: " + kpuId);
-	}
-	
-
-	
-	public void killCivilianVote() {
-		// Get player ID to be killed
-		BufferedReader inFromuser = new BufferedReader(new InputStreamReader(System.in));
-		System.out.print("Which werewolf do you want to kill? Insert player id: ");
-		int target = 0;
-		try {
-			target = Integer.parseInt(inFromuser.readLine());
-		} catch (IOException e) {}
-
-		// Create json
-		try{
-			jsonRequest = new JSONObject();
-	        jsonRequest.put("method", "vote_civilian");
-	        jsonRequest.put("player_id", target);
-	    } catch (org.json.JSONException e) {}
-
-	    // Send json to KPU
-		byte[] sendData = jsonRequest.toString().getBytes();
-		try {
-			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, kpuAddress, kpuPort);
-			datagramSocket.send(sendPacket);
-		} catch (UnknownHostException e){
-		} catch (IOException e){}
-	}
-
 	/*** METHOD FOR KPU ***/
 
 	public boolean calculateWerewolfVote() {
@@ -682,7 +775,8 @@ public class Client {
 		int vote1 = 0, vote2 = 0;
 
 		// Read message from listener
-		while (vote1 == 0 && vote2 == 0) {
+		int countWerewolf = werewolfActive();
+		while ((countWerewolf == 2 && vote1 == 0 && vote2 == 0) || (countWerewolf==1 && vote1==0)){
 			try {
 				JSONObject vote = new JSONObject((String) messageQueue[0].remove(0));
 				String method = vote.getString("method");
@@ -705,11 +799,33 @@ public class Client {
 					} catch (IOException e){}
 				}
 				else {
-
+					try {
+						sendFailResponse("", InetAddress.getByName(vote.getString("udp_address")), vote.getInt("udp_port"));
+					} catch (UnknownHostException e){}
 				}
 			} catch (JSONException e) {}
 		}
-		if (vote1 == vote2) {
+		if (countWerewolf == 2) {
+			if (vote1 == vote2) {
+				// Send to server
+				try{
+					jsonRequest = new JSONObject();
+		        	jsonRequest.put("method", "vote_result_werewolf");
+		        	jsonRequest.put("vote_status", 1);
+		        	jsonRequest.put("player_killed", vote1);
+		        	JSONArray array = new JSONArray();
+		        	array.put(vote1);
+		        	array.put(2);
+		        	jsonRequest.put("vote_result", array);
+	        	} catch (org.json.JSONException e) {}	    	
+		    	System.out.println("Sending request: " + jsonRequest.toString());
+		    	out.println(jsonRequest.toString());
+				return true;
+			}
+			else
+				return false;
+		}
+		else { // countWerewolf == 1
 			// Send to server
 			try{
 				jsonRequest = new JSONObject();
@@ -718,16 +834,110 @@ public class Client {
 	        	jsonRequest.put("player_killed", vote1);
 	        	JSONArray array = new JSONArray();
 	        	array.put(vote1);
-	        	array.put(2);
+	        	array.put(1);
 	        	jsonRequest.put("vote_result", array);
         	} catch (org.json.JSONException e) {}	    	
 	    	System.out.println("Sending request: " + jsonRequest.toString());
 	    	out.println(jsonRequest.toString());
 			return true;
 		}
-		else
-			return false;
 	}
+
+	public void calculateCivilianVote() {
+		// Menghitung voting dari seluruh civilian (voting werewolf mana yang mau dibunuh)
+
+		// Initialize array
+		int[] voteResult = new int[players.size()+1];
+		for (int i=0; i<+players.size(); i++)
+			voteResult[i] = 0;
+
+		// Read from listener
+		int countVote = 0;
+		boolean timeout = false;
+		while (!timeout && countVote < playersActive()) {
+			try {
+				if (messageQueue[0].size() > 0) {
+					JSONObject vote = new JSONObject((String) messageQueue[0].remove(0));
+					String method = vote.getString("method");
+					if (method.equals("vote_civilian")) {
+						int targetId = vote.getInt("player_id");
+						voteResult[targetId]++;
+						countVote++;
+						
+						// Send response to sender
+						jsonRequest = new JSONObject();
+				        jsonRequest.put("status", "ok");
+				        jsonRequest.put("description", "");
+						byte[] sendData = jsonRequest.toString().getBytes();
+						try {
+							DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(vote.getString("udp_address")), vote.getInt("udp_port"));
+							datagramSocket.send(sendPacket);
+						} catch (UnknownHostException e){
+						} catch (IOException e){}
+					}
+					else {
+						try {
+							sendFailResponse("", InetAddress.getByName(vote.getString("udp_address")), vote.getInt("udp_port"));
+						} catch (UnknownHostException e){}
+					}
+				}
+			} catch (JSONException e) {}
+		}
+
+		// Hitung siapa yang dapat vote tertinggi dan mayoritas tercapai atau tidak
+		int max = voteResult[0];
+		int playerKilled = 0;
+		for (int i=0; i<voteResult.length; i++) {
+			if (voteResult[i] > max) {
+				max = voteResult[i];
+				playerKilled = i;
+			}
+			else if (voteResult[i] == max) {
+				playerKilled = 0;
+			}
+		}
+
+		// Tell result to server
+		try{
+			jsonRequest = new JSONObject();
+        	jsonRequest.put("method", "vote_result_civilian");
+        	if (playerKilled == 0)
+        		jsonRequest.put("vote_status", -1);
+        	else {
+        		jsonRequest.put("vote_status", 1);
+        		jsonRequest.put("player_killed", playerKilled);
+        	}
+        	JSONArray array = new JSONArray();
+        	for (int i=0; i<voteResult.length; i++) {
+        		if (voteResult[i] > 0) {
+	        		array.put(i);
+    	    		array.put(voteResult[i]);
+        		}
+        	}
+        	jsonRequest.put("vote_result", array);
+    	} catch (org.json.JSONException e) {}	    	
+    	System.out.println("Sending request: " + jsonRequest.toString());
+    	out.println(jsonRequest.toString());
+	}
+
+	//response untuk request UDP
+    public void sendFailResponse(String desc, InetAddress address, int port){
+        try {
+            jsonResponse = new JSONObject();
+            jsonResponse.put("status", "fail");
+            jsonResponse.put("description", desc);
+
+            //kirim response
+            System.out.println("Sending response: " + jsonResponse.toString());
+            out.println(jsonResponse.toString());
+            byte[] sendData = jsonResponse.toString().getBytes();
+			try {
+				DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, port);
+				datagramSocket.send(sendPacket);
+			} catch (UnknownHostException e){
+			} catch (IOException e){}
+        } catch (org.json.JSONException e) { }
+    }
 	
 
 	/*** MAIN ***/
