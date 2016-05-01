@@ -82,7 +82,7 @@ public class Client {
 	protected final long maxTime = 3000;
 
     /*** KONSTRUKTOR ***/
-	public Client(int port){
+	public Client(String ip, int port){
 		players = new ArrayList<Player>();
 		isAlive = false;
 
@@ -96,7 +96,7 @@ public class Client {
 			messageQueue[0] = new ArrayList<String>();
 
 			// TCP Socket
-			dstAddress = "localhost";
+			dstAddress = ip;
 			IPAddress = InetAddress.getByName(dstAddress);
 			dstPort = 9876;
 			socket = new Socket(dstAddress, dstPort);
@@ -352,6 +352,9 @@ public class Client {
 		// Get from server
 		System.out.println("Waiting for change phase");
 		readResponse();
+		if (playerId == kpuId)
+			readResponse();
+		System.out.println("inside changephase: " + jsonResponse.toString());
 		try {
 			String method = jsonResponse.getString("method");
 			if (method.equals("change_phase")) {
@@ -1002,7 +1005,9 @@ public class Client {
 		Scanner sc = new Scanner(System.in);
 		System.out.print("Your PORT: ");
 		int port = Integer.parseInt(sc.nextLine());
-		Client client = new Client(port);
+		System.out.print("Insert IP Server: ");
+		String ip = sc.nextLine();
+		Client client = new Client(ip, port);
 
 		// start listener thread
 		UDPListenerThread udpListenerThread = new UDPListenerThread(client.listenSocket, client.messageQueue); //mungkin di main
