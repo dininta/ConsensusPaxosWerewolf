@@ -556,6 +556,10 @@ public class Client {
 		    		}
 		    		else if(jsonResponse.has("kpu")) {
 		    			kpuId = jsonResponse.getInt("kpu");
+		    			readResponse();
+		    			System.out.println("WOOOYYY " + jsonResponse.toString() );
+		    			
+
 		    		}
 
 		    	} catch (org.json.JSONException e) {}
@@ -786,7 +790,7 @@ public class Client {
 					       
 					    } catch (org.json.JSONException e) {}
 
-					    // Send json to every acceptor
+					    // Send json to every one
 					    System.out.println("dummy: " + jsonRequest);
 						sendData = jsonRequest.toString().getBytes();
 						for (int i=0; i<players.size(); i++) {
