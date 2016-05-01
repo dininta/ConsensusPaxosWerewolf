@@ -453,26 +453,32 @@ public class ServerThread extends Thread {
             }
             i++;
         }
-        for (int j = 0; j < Server.kpuCounter.size()-1; j++){
-            if (Server.kpuCounter.get(i) == candidate1){
-                count1++;
-            } else {
-                count2++;
-            }
-        } 
-        if (count1 > count2){
-            return candidate1;
-        } else if (count1 < count2){
-            return candidate2;
-        } else{
-            Random random = new Random();
-            double rand = random.nextDouble();
-            if (rand <= 0.5) {
+        if(found) {
+            for (int j = 0; j < Server.kpuCounter.size(); j++){
+                if (Server.kpuCounter.get(i) == candidate1){
+                    count1++;
+                } else {
+                    count2++;
+                }
+            } 
+            if (count1 > count2){
                 return candidate1;
-            } else {
+            } else if (count1 < count2){
                 return candidate2;
+            } else{
+                Random random = new Random();
+                double rand = random.nextDouble();
+                if (rand <= 0.5) {
+                    return candidate1;
+                } else {
+                    return candidate2;
+                }
             }
         }
+        else {
+            return candidate1;
+        }
+
     }
 
     //getter
