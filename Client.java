@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.*;
 import java.net.InetAddress;
+import java.util.Timer;
 
 public class Client {
 
@@ -362,6 +363,11 @@ public class Client {
 					    jsonRequest.put("status", "ok");
 				        jsonRequest.put("description", "accepted");
 				        jsonRequest.put("previous_accepted", previousProposal);
+				    } else if((a==c) &&(d==b)){
+				    	jsonRequest = new JSONObject();
+					    jsonRequest.put("status", "ok");
+				        jsonRequest.put("description", "accepted");
+				        jsonRequest.put("previous_accepted", previousProposal);
 				    } else {
 				    	jsonRequest = new JSONObject();
 					    jsonRequest.put("status", "fail");
@@ -388,32 +394,35 @@ public class Client {
 					} catch (UnknownHostException e){
 					} catch (IOException e){}
 
-					// send to server
-					try{
-						jsonRequest = new JSONObject();
-			        	jsonRequest.put("method", "accepted_proposal");
-			        	jsonRequest.put("kpu_id", previousProposal[1]);
-			        	jsonRequest.put("description", "Kpu is selected");
-		        	} catch (org.json.JSONException e) {}
-			    	
-			    	// Send json
-			    	System.out.println("IN WAITPROPOSAL Request: " + jsonRequest.toString());
-			    	//System.out.println("Sending request: " + jsonRequest.toString());
-			    	out.println(jsonRequest.toString());
+					if(jsonRequest.getString("status").equals("ok")) {
+											// send to server
+						try{
+							jsonRequest = new JSONObject();
+				        	jsonRequest.put("method", "accepted_proposal");
+				        	jsonRequest.put("kpu_id", previousProposal[1]);
+				        	jsonRequest.put("description", "Kpu is selected");
+			        	} catch (org.json.JSONException e) {}
+				    	
+				    	// Send json
+				    	System.out.println("IN WAITPROPOSAL Request: " + jsonRequest.toString());
+				    	//System.out.println("Sending request: " + jsonRequest.toString());
+				    	out.println(jsonRequest.toString());
 
-					// read from server
-					readResponse();
-					System.out.println("IN WAITPROPOSAL Response: " + jsonResponse.toString());
-					// ini untuk nerima ok, tapi bisa aja error? TODO HANDLE THIS
-					readResponse();
-					System.out.println("IN WAITPROPOSAL Response: " + jsonResponse.toString());
-				   	try {
-				    	String method = jsonResponse.getString("method");
-				    	if (method.equals("kpu_selected")){
-				    		kpuId = jsonResponse.getInt("kpu_id");
-				    	}
-				    		 
-					} catch (JSONException e) {}
+						// read from server
+						readResponse();
+						System.out.println("IN WAITPROPOSAL Response: " + jsonResponse.toString());
+						// ini untuk nerima ok, tapi bisa aja error? TODO HANDLE THIS
+						readResponse();
+						System.out.println("IN WAITPROPOSAL Response: " + jsonResponse.toString());
+					   	try {
+					    	String method = jsonResponse.getString("method");
+					    	if (method.equals("kpu_selected")){
+					    		kpuId = jsonResponse.getInt("kpu_id");
+					    	}
+					    		 
+						} catch (JSONException e) {}
+					}
+
 
 				} else {
 
@@ -547,15 +556,17 @@ public class Client {
 			}
 		}
 
-		boolean timeout = false;
-	    while (!timeout){
+		
+		//boolean timeout = false;
+	    //while (!timeout){
 		    if (messageQueue[0].size() > 0) {
 		    	String response = messageQueue[0].remove(0).toString();
+		    	System.out.println("Acceptor Response: " + response);
 		    	try {
 		    		jsonResponse = new JSONObject (response);
 		    	} catch (org.json.JSONException e) {}
 	    	}
-		}
+		//}
 	}
 
 	/*** METHOD FOR WEREWOLF ***/
@@ -602,7 +613,9 @@ public class Client {
 			    	System.out.println("success");
 			    	acceptProposal();
 			    	// Wait KPU id from server
+			    	System.out.println("menunggu respon");
 			   		readResponse();
+			   		System.out.println("Response:" + jsonResponse.toString());
 			   		try {
 			    		String method = jsonResponse.getString("method");
 			    		if (method.equals("kpu_selected"))

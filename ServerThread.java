@@ -372,11 +372,12 @@ public class ServerThread extends Thread {
         try {
             jsonResponse = new JSONObject();
 
+
             jsonResponse.put("method", "kpu_selected");
             jsonResponse.put("kpu_id", Server.kpuId);
             
             //kirim response
-            System.out.println("Sending response: " + jsonResponse.toString());
+            System.out.println(" Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
         } catch (org.json.JSONException e) {
             sendErrorResponse();
