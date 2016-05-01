@@ -295,7 +295,7 @@ public class Client {
 			try{
 				response = messageQueue[0].remove(0).toString();
 				jsonResponse = new JSONObject(response);
-
+				System.out.println("masuk nih" + response);
 				if (jsonResponse.getString("method").equals("prepare_proposal")){
 					System.out.println("IN WAITPROPOSAL, METHOD: PREPARE_PROPOSAL");
 					int a = jsonResponse.getJSONArray("proposal_id").getInt(0);
@@ -403,12 +403,16 @@ public class Client {
 
 					// read from server
 					readResponse();
+					System.out.println("IN WAITPROPOSAL Response: " + jsonResponse.toString());
 					// ini untuk nerima ok, tapi bisa aja error? TODO HANDLE THIS
 					readResponse();
+					System.out.println("IN WAITPROPOSAL Response: " + jsonResponse.toString());
 				   	try {
 				    	String method = jsonResponse.getString("method");
-				    	if (method.equals("kpu_selected"))
-				    		kpuId = jsonResponse.getInt("kpu_id"); 
+				    	if (method.equals("kpu_selected")){
+				    		kpuId = jsonResponse.getInt("kpu_id");
+				    	}
+				    		 
 					} catch (JSONException e) {}
 
 				} else {
@@ -617,6 +621,7 @@ public class Client {
 			    waitProposal();
 			}
 		}
+		System.out.println("KPU terpilih: " + kpuId);
 	}
 	
 

@@ -296,7 +296,7 @@ public class ServerThread extends Thread {
             jsonResponse.put("status", "ok");
             jsonResponse.put("description", "");
             System.out.println("Sending response: " + jsonResponse.toString());
-
+            out.println(jsonResponse.toString());
 
             //jangan lupa diganti isAlive
             System.out.println("Choosing KPU, I am player number: " + player_id);
@@ -304,12 +304,9 @@ public class ServerThread extends Thread {
                 System.out.println("I am in, the kpuCounter.size() is = " + Server.kpuCounter.size());
                 Server.kpuId = choosenKpu();
 
-                jsonResponse = new JSONObject();
-
-                jsonResponse.put("method", "kpu_selected");
-                jsonResponse.put("kpu_id", Server.kpuId);
-                System.out.println("Sending response: " + jsonResponse.toString());
-                out.println(jsonResponse.toString());
+                for(ServerThread player: Server.clients){
+                    player.sendChoosenKpu();
+                }                
             }
             
          } catch (org.json.JSONException e) {
@@ -368,6 +365,22 @@ public class ServerThread extends Thread {
             sendErrorResponse();
         }
 
+    }
+
+    //send Choosen KPU
+    public void sendChoosenKpu(){
+        try {
+            jsonResponse = new JSONObject();
+
+            jsonResponse.put("method", "kpu_selected");
+            jsonResponse.put("kpu_id", Server.kpuId);
+            
+            //kirim response
+            System.out.println("Sending response: " + jsonResponse.toString());
+            out.println(jsonResponse.toString());
+        } catch (org.json.JSONException e) {
+            sendErrorResponse();
+        }
     }
 
     //response untuk request yang tidak sesuai kebutuhan
