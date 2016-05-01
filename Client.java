@@ -337,6 +337,7 @@ public class Client {
 				    }
 					byte[] sendData = jsonRequest.toString().getBytes();
 					try {
+						System.out.println("Sending: " + jsonRequest.toString());
 						DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, proposerAddress, proposerPort);
 						datagramSocket.send(sendPacket);
 					} catch (UnknownHostException e){
@@ -381,6 +382,7 @@ public class Client {
 				    }
 					byte[] sendData = jsonRequest.toString().getBytes();
 					try {
+						System.out.println("Sending: " + jsonRequest.toString());
 						DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, proposerAddress, proposerPort);
 						datagramSocket.send(sendPacket);
 					} catch (UnknownHostException e){
@@ -400,6 +402,8 @@ public class Client {
 			    	out.println(jsonRequest.toString());
 
 					// read from server
+					readResponse();
+					// ini untuk nerima ok, tapi bisa aja error? TODO HANDLE THIS
 					readResponse();
 				   	try {
 				    	String method = jsonResponse.getString("method");
@@ -483,7 +487,7 @@ public class Client {
 		int counterAccepted = 0;
 	    int counterRejected = 0;
 	    boolean timeout = false;
-	    while (!timeout && ((counterAccepted < playersActive()/2 + 1) && (counterRejected < playersActive()/2 + 1))){
+	    while (!timeout && ((counterAccepted < playersActive()/2) && (counterRejected < playersActive()/2))){
 		    if (messageQueue[0].size() > 0) {
 		    	String response = messageQueue[0].remove(0).toString();
 		    	try {
@@ -502,10 +506,10 @@ public class Client {
 		else if (counterAccepted == counterRejected){
 			return false;
 		} 
-		else if (counterAccepted >= playersActive()/2 + 1) {
+		else if (counterAccepted >= playersActive()/2) {
 			return true;
 		}
-		else if (counterRejected >= playersActive()/2 + 1) {
+		else if (counterRejected >= playersActive()/2) {
 			return false;
 		} else {
 			return false;

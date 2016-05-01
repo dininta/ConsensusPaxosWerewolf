@@ -299,7 +299,9 @@ public class ServerThread extends Thread {
 
 
             //jangan lupa diganti isAlive
-            if(Server.kpuCounter.size() == Server.clients.size()) {
+            System.out.println("Choosing KPU, I am player number: " + player_id);
+            if(Server.kpuCounter.size() == Server.clients.size()-2) {
+                System.out.println("I am in, the kpuCounter.size() is = " + Server.kpuCounter.size());
                 Server.kpuId = choosenKpu();
 
                 jsonResponse = new JSONObject();
@@ -451,7 +453,7 @@ public class ServerThread extends Thread {
             }
             i++;
         }
-        for (int j = 0; j < Server.kpuCounter.size(); j++){
+        for (int j = 0; j < Server.kpuCounter.size()-1; j++){
             if (Server.kpuCounter.get(i) == candidate1){
                 count1++;
             } else {
