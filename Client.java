@@ -373,6 +373,7 @@ public class Client {
 		    	for (int i = 0; i < clients.length(); ++i) {
 				    JSONObject client = clients.getJSONObject(i);
 				    Player player;
+
 				    if (client.has("role"))
 				    	player = new Player (	client.getInt("player_id"),
 				    							client.getInt("is_alive"),
@@ -387,6 +388,10 @@ public class Client {
 				    							client.getInt("port"),
 				    							client.getString("username") );
 				    players.add(player);
+
+				    if ((client.getInt("player_id") == playerId) && (isAlive) && (client.getInt("is_alive") == 0)){ // my player data
+				    	isAlive = false;
+				    }
 				}
 
 				if(print){
@@ -396,7 +401,6 @@ public class Client {
 						players.get(i).print();
 					}
 				}
-
 		    }
 		    else {
 		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
