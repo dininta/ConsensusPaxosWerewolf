@@ -25,6 +25,7 @@ public class ServerThread extends Thread {
     protected String request; 
 	protected String response;
     public boolean tes = false;
+    public int lastKilled;
 
     protected int player_id;
     protected String username;
@@ -38,7 +39,7 @@ public class ServerThread extends Thread {
     protected int counter_day = 1;
     protected int kpuId;
     protected String lastMethod;
-    protected int lastKilled;
+    
    
 
     protected PrintWriter out; 
@@ -344,7 +345,7 @@ public class ServerThread extends Thread {
             int status = jsonRequest.getInt("vote_status");
             if (status == 1) {
                 for(ServerThread player: Server.clients) {
-                    lastKilled = jsonRequest.getInt("player_killed");
+                    player.lastKilled = jsonRequest.getInt("player_killed");
                     System.out.println("IN VOTECIVILIAN: lastKilled is" + lastKilled);
                     if(player.getPlayerId() == jsonRequest.getInt("player_killed")){
                         player.kill();
