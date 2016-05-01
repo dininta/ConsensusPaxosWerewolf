@@ -76,6 +76,10 @@ public class Client {
     protected final ArrayList[] messageQueue = new ArrayList[1];
 	protected String role;
 	protected String time;
+	protected CheckTimeout checkTimeout;
+
+	// constants
+	protected final long maxTime = 3000;
 
     /*** KONSTRUKTOR ***/
 	public Client(int port){
@@ -98,7 +102,10 @@ public class Client {
 			socket = new Socket(dstAddress, dstPort);
             System.out.println("Server has connected");
 	        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);      
+            out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
+
+            // init time
+            checkTimeout = new CheckTimeout(); // ini by default akan diisi durasi = 0 ya sis     
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -499,8 +506,9 @@ public class Client {
 
 		int counterAccepted = 0;
 	    int counterRejected = 0;
-	    boolean timeout = false;
-	    while (!timeout && ((counterAccepted < playersActive()/2) && (counterRejected < playersActive()/2))){
+	    //boolean timeout = false;
+	    checkTimeout = new CheckTimeout(maxTime);
+	    while (!checkTimeout.isTimeout() && ((counterAccepted < playersActive()/2) && (counterRejected < playersActive()/2))){
 		    if (messageQueue[0].size() > 0) {
 		    	String response = messageQueue[0].remove(0).toString();
 		    	try {
@@ -513,7 +521,7 @@ public class Client {
 		    	} catch (org.json.JSONException e) {}
 	    	}
 		}	
-		if (timeout){
+		if (checkTimeout.isTimeout()){
 			return false;
 		}
 		else if (counterAccepted == counterRejected){
@@ -558,7 +566,8 @@ public class Client {
 
 		
 		//boolean timeout = false;
-	    //while (!timeout){
+		checkTimeout = new CheckTimeout(maxTime);
+	    while (!checkTimeout.isTimeout()){
 		    if (messageQueue[0].size() > 0) {
 		    	String response = messageQueue[0].remove(0).toString();
 		    	System.out.println("Acceptor Response: " + response);
@@ -566,7 +575,7 @@ public class Client {
 		    		jsonResponse = new JSONObject (response);
 		    	} catch (org.json.JSONException e) {}
 	    	}
-		//}
+		}
 	}
 
 	/*** METHOD FOR WEREWOLF ***/
