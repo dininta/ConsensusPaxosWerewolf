@@ -38,6 +38,7 @@ public class ServerThread extends Thread {
     protected int counter_day = 1;
     protected int kpuId;
     protected String lastMethod;
+    protected int lastKilled;
    
 
     protected PrintWriter out; 
@@ -53,6 +54,7 @@ public class ServerThread extends Thread {
         is_alive = 0;
         isReady = false;
         lastMethod = "";
+        lastKilled = 0;
         role = "";
         try{
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -342,8 +344,11 @@ public class ServerThread extends Thread {
             int status = jsonRequest.getInt("vote_status");
             if (status == 1) {
                 for(ServerThread player: Server.clients) {
-                    if(player.getPlayerId() == jsonRequest.getInt("player_killed"))
+                    lastKilled = jsonRequest.getInt("player_killed");
+                    System.out.println("IN VOTECIVILIAN: lastKilled is" + lastKilled);
+                    if(player.getPlayerId() == jsonRequest.getInt("player_killed")){
                         player.kill();
+                    }
                 }
             }
 
@@ -369,6 +374,7 @@ public class ServerThread extends Thread {
             int status = jsonRequest.getInt("vote_status");
             if (status == 1) {
                 for(ServerThread player: Server.clients) {
+                    player.lastKilled = jsonRequest.getInt("player_killed");
                     if(player.getPlayerId() == jsonRequest.getInt("player_killed") && player.getRole().equals("werewolf"))
                         player.kill();
                 }
@@ -410,6 +416,7 @@ public class ServerThread extends Thread {
             jsonResponse.put("time", current_time);
             jsonResponse.put("days", counter_day);
             jsonResponse.put("description", "");
+            jsonResponse.put("last_killed", lastKilled);
 
             //kirim json
             System.out.println("Sending response: " + jsonResponse.toString());

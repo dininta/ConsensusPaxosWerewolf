@@ -325,13 +325,15 @@ public class Client {
 			// change phase
 			changePhase();
 			System.out.println("sudah malam");
-			getListClient(true);
+			
 			System.out.println("habis print list");
+			System.out.println("isAlive: " + isAlive);
 			if (!isAlive) {
 				System.out.println("You're dead");
 				break;
 			}
 			else {
+				getListClient(true);
 				// night
 				waitToVote();
 				// change phase
@@ -354,6 +356,13 @@ public class Client {
 			String method = jsonResponse.getString("method");
 			if (method.equals("change_phase")) {
 		    	time = jsonResponse.getString("time");
+		    	System.out.println("IN CHANGE PHASE: isAlive is " + isAlive);
+		    	if (jsonResponse.getInt("last_killed") == playerId){
+		    		isAlive = false;
+		    	}
+		    	System.out.println("IN CHANGE PHASE: last killed is " + jsonResponse.getInt("last_killed"));
+		    	System.out.println("IN CHANGE PHASE: my playerId is " + playerId);
+		    	System.out.println("IN CHANGE PHASE: isAlive is " + isAlive + " (2)");
 			}
 
 			System.out.println("Change phase. Now is " + time);
