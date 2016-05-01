@@ -120,7 +120,6 @@ public class ServerThread extends Thread {
             }
             else if(method.equals("vote_result_civilian")) {
                 voteCivilian();
-                changePhase = true;
             }
             else {
                 sendFailResponse("command not found");
@@ -347,13 +346,20 @@ public class ServerThread extends Thread {
             jsonResponse.put("description", "");
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
-
+            changePhase = true;
+            changePhase();
         } catch (org.json.JSONException e) {
             sendErrorResponse();
         }
     }
 
     public void changePhase() {
+        System.out.println("Player "+ player_id + " is going to changePhase");
+        while (!changePhase) {
+            try {
+                sleep(500);
+            } catch (InterruptedException e) {}
+        }
         if (current_time.equals("night")) {
             current_time = "day";
             counter_day++;
@@ -381,14 +387,18 @@ public class ServerThread extends Thread {
     }
 
     public void vote() {
+        System.out.println("Player " + player_id +" is in vote()");
         try{
             jsonResponse = new JSONObject();
             jsonResponse.put("method", "vote_now");
             jsonResponse.put("phase", current_time);
 
             //kirim json
-            System.out.println("Sending response: " + jsonResponse.toString());
+            System.out.println("Player " + player_id + "is sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
+            if (player_id != Server.kpuId){
+                changePhase();
+            }
         } catch (org.json.JSONException e) {
             sendErrorResponse();
         }
@@ -421,7 +431,7 @@ public class ServerThread extends Thread {
             out.println(jsonResponse.toString());
 
             lastMethod = "sendChoosenKpu";
-            changePhase();
+            //changePhase();
         } catch (org.json.JSONException e) {
             sendErrorResponse();
         }
@@ -458,10 +468,6 @@ public class ServerThread extends Thread {
     public void run(){
         while (running) {
     	   readRequest();
-           if (changePhase) {
-                // ganti fase
-                changePhase();
-           }
         }
         out.close();
     }
