@@ -547,11 +547,17 @@ public class Client {
 		    	String response = messageQueue[0].remove(0).toString();
 		    	try {
 		    		jsonResponse = new JSONObject (response);
-		    		if (jsonResponse.getString("status").equals("ok")){
-		    			counterAccepted++;
-		    		} else {
-		    			counterRejected++;
+		    		if(jsonResponse.has("status")) {
+			    		if (jsonResponse.getString("status").equals("ok")){
+			    			counterAccepted++;
+			    		} else {
+			    			counterRejected++;
+			    		}
 		    		}
+		    		else if(jsonResponse.has("kpu")) {
+		    			kpuId = jsonResponse.getInt("kpu");
+		    		}
+
 		    	} catch (org.json.JSONException e) {}
 	    	}
 		}	
@@ -772,6 +778,27 @@ public class Client {
 					    	}
 					    		 
 						} catch (JSONException e) {}
+
+						//send dummy data to all
+						try{
+							jsonRequest = new JSONObject();
+					        jsonRequest.put("kpu", kpuId);
+					       
+					    } catch (org.json.JSONException e) {}
+
+					    // Send json to every acceptor
+					    System.out.println("dummy: " + jsonRequest);
+						sendData = jsonRequest.toString().getBytes();
+						for (int i=0; i<players.size(); i++) {
+							if (players.get(i).playerId != playerId && players.get(i).isAlive == 1) {
+								try {
+									DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(players.get(i).address), players.get(i).port);
+									datagramSocket.send(sendPacket);
+								} catch (UnknownHostException e){
+								} catch (IOException e){}
+							}
+						}
+
 					}
 
 

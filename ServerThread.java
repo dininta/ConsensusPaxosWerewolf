@@ -432,7 +432,6 @@ public class ServerThread extends Thread {
             System.out.println("Player " + player_id + "is sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
 
-            Server.changePhase = false;
             if (player_id != Server.kpuId){
                 changePhase();
             }
