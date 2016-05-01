@@ -24,6 +24,7 @@ public class ServerThread extends Thread {
 	protected static InetAddress IPAddress;
     protected String request; 
 	protected String response;
+    public boolean tes = false;
 
     protected int player_id;
     protected String username;
@@ -37,7 +38,7 @@ public class ServerThread extends Thread {
     protected int counter_day = 1;
     protected int kpuId;
     protected String lastMethod;
-    protected static boolean changePhase = false;
+   
 
     protected PrintWriter out; 
 
@@ -346,7 +347,9 @@ public class ServerThread extends Thread {
             jsonResponse.put("description", "");
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
-            changePhase = true;
+            for(ServerThread player: Server.clients){
+                player.tes = true;
+            }
             changePhase();
         } catch (org.json.JSONException e) {
             sendErrorResponse();
@@ -355,7 +358,7 @@ public class ServerThread extends Thread {
 
     public void changePhase() {
         System.out.println("Player "+ player_id + " is going to changePhase");
-        while (!changePhase) {
+        while (!tes) {
             try {
                 sleep(500);
             } catch (InterruptedException e) {}
@@ -383,7 +386,6 @@ public class ServerThread extends Thread {
         } catch (org.json.JSONException e) {
             sendErrorResponse();
         }
-        changePhase = false;
     }
 
     public void vote() {
@@ -396,6 +398,8 @@ public class ServerThread extends Thread {
             //kirim json
             System.out.println("Player " + player_id + "is sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
+
+            Server.changePhase = false;
             if (player_id != Server.kpuId){
                 changePhase();
             }
