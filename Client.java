@@ -324,12 +324,24 @@ public class Client {
 			waitToVote();
 			// change phase
 			changePhase();
+			System.out.println("sudah malam");
 			getListClient(true);
-			if (!isAlive)
+			System.out.println("habis print list");
+			if (!isAlive) {
+				System.out.println("You're dead");
 				break;
-
-			// night
-			waitToVote();
+			}
+			else {
+				// night
+				waitToVote();
+				// change phase
+				changePhase();
+				getListClient(true);
+				if (!isAlive) {
+					System.out.println("You're dead");
+					break;
+				}
+			}
 		}
 			
 	}

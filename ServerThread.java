@@ -122,6 +122,9 @@ public class ServerThread extends Thread {
             else if(method.equals("vote_result_civilian")) {
                 voteCivilian();
             }
+            else if(method.equals("vote_result_werewolf")) {
+                voteWerewolf();
+            }
             else {
                 sendFailResponse("command not found");
             }
@@ -138,7 +141,7 @@ public class ServerThread extends Thread {
                 }
                 if (lastMethod.equals("changePhase")) {
                     System.out.println("status:" + jsonRequest.getString("status"));
-                    vote();
+                    //vote();
                 }
                 else
                     System.out.println("status:" + jsonRequest.getString("status"));
@@ -250,6 +253,9 @@ public class ServerThread extends Thread {
             jsonResponse.put("description", "list of clients retrieved");
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
+
+            if (lastMethod.equals("changePhase"))
+                vote();
          } catch (org.json.JSONException e) {
             sendErrorResponse();
          }
@@ -337,6 +343,33 @@ public class ServerThread extends Thread {
             if (status == 1) {
                 for(ServerThread player: Server.clients) {
                     if(player.getPlayerId() == jsonRequest.getInt("player_killed"))
+                        player.kill();
+                }
+            }
+
+            // send response to KPU
+            jsonResponse = new JSONObject();
+            jsonResponse.put("status", "ok");
+            jsonResponse.put("description", "");
+            System.out.println("Sending response: " + jsonResponse.toString());
+            out.println(jsonResponse.toString());
+            for(ServerThread player: Server.clients){
+                player.tes = true;
+            }
+            changePhase();
+        } catch (org.json.JSONException e) {
+            sendErrorResponse();
+        }
+    }
+
+    public void voteWerewolf() {
+
+        try {
+            // lihat statusnya
+            int status = jsonRequest.getInt("vote_status");
+            if (status == 1) {
+                for(ServerThread player: Server.clients) {
+                    if(player.getPlayerId() == jsonRequest.getInt("player_killed") && player.getRole().equals("werewolf"))
                         player.kill();
                 }
             }
