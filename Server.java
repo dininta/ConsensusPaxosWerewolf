@@ -30,8 +30,10 @@ public class Server {
     protected static boolean isReady;
     protected static int kpuId;
     protected static ArrayList<Integer> kpuCounter;
+    public static boolean changePhase;
 
     public Server(){
+        changePhase = false;
         clients = new ArrayList<ServerThread>();
         usernames = new ArrayList<String>();
         dstAddress = "localhost";

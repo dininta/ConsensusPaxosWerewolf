@@ -446,13 +446,17 @@ public class Client {
 				}
 				else {	// time == "night"
 					boolean consensus = false;
-					while (!consensus) {
-						if (role.equals("werewolf"))
-							killWerewolfVote();
-						else
-							System.out.println("It's night. Waiting...");
+					if (role.equals("civilian")) {
+						System.out.println("It's night. Waiting...");
 						if (kpuId == playerId)
 							consensus = calculateWerewolfVote();
+					}
+					else {	// werewolf
+						while (!consensus) {
+							killWerewolfVote();
+							if (kpuId == playerId)
+								consensus = calculateWerewolfVote();
+						}
 					}
 				}
 			}
@@ -837,30 +841,32 @@ public class Client {
 		int countWerewolf = werewolfActive();
 		while ((countWerewolf == 2 && vote1 == 0 && vote2 == 0) || (countWerewolf==1 && vote1==0)){
 			try {
-				JSONObject vote = new JSONObject((String) messageQueue[0].remove(0));
-				String method = vote.getString("method");
-				if (method.equals("vote_werewolf")) {
-					int targetId = vote.getInt("player_id");
-					if (vote1 == 0)
-						vote1 = targetId;
-					else
-						vote2 = targetId;
+				if (messageQueue[0].size() > 0) {
+					JSONObject vote = new JSONObject((String) messageQueue[0].remove(0));
+					String method = vote.getString("method");
+					if (method.equals("vote_werewolf")) {
+						int targetId = vote.getInt("player_id");
+						if (vote1 == 0)
+							vote1 = targetId;
+						else
+							vote2 = targetId;
 
-					// Send response to werewolf
-					jsonRequest = new JSONObject();
-			        jsonRequest.put("status", "ok");
-			        jsonRequest.put("description", "");
-					byte[] sendData = jsonRequest.toString().getBytes();
-					try {
-						DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(vote.getString("udp_address")), vote.getInt("udp_port"));
-						datagramSocket.send(sendPacket);
-					} catch (UnknownHostException e){
-					} catch (IOException e){}
-				}
-				else {
-					try {
-						sendFailResponse("", InetAddress.getByName(vote.getString("udp_address")), vote.getInt("udp_port"));
-					} catch (UnknownHostException e){}
+						// Send response to werewolf
+						jsonRequest = new JSONObject();
+				        jsonRequest.put("status", "ok");
+				        jsonRequest.put("description", "");
+						byte[] sendData = jsonRequest.toString().getBytes();
+						try {
+							DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(vote.getString("udp_address")), vote.getInt("udp_port"));
+							datagramSocket.send(sendPacket);
+						} catch (UnknownHostException e){
+						} catch (IOException e){}
+					}
+					else {
+						try {
+							sendFailResponse("", InetAddress.getByName(vote.getString("udp_address")), vote.getInt("udp_port"));
+						} catch (UnknownHostException e){}
+					}
 				}
 			} catch (JSONException e) {}
 		}
