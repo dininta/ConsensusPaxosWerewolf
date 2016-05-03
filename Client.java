@@ -248,8 +248,8 @@ public class Client {
 			    
 		    }
 		    else { // status == "fail" or status == "error"
-		    	System.out.println("ERROR!!!");
-		    	//System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
+		    	
+		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
 		    }
 		} catch (JSONException e) {}
 	}
@@ -258,9 +258,8 @@ public class Client {
 		messageQueue[0].clear();
 		//cuma buat print doang
 		boolean cek =true;
+		kpuId =0;
 
-		System.out.println("IN STARTELECTION");
-		System.out.println("KPUID: " + kpuId);
 		while (kpuId==0){
 			//System.out.println("KPUID: " + kpuId);
 			if (playerId >= players.size() - 1){//ntar jadi players.size() yhaa
@@ -269,8 +268,7 @@ public class Client {
 			    if(success) {
 			    	System.out.println("success");
 			    	acceptProposal();
-			    	// Wait KPU id from server
-			    	System.out.println("menunggu respon");
+
 			   		readResponse();
 			   		System.out.println("Response:" + jsonResponse.toString());
 			   		try {
@@ -311,7 +309,7 @@ public class Client {
 			jsonRequest = new JSONObject();
 			jsonRequest.put("status", "ok");
 			jsonRequest.put("description", "");
-			System.out.println("AFTER DAPET KPU Request: " + jsonRequest.toString());
+			
 			out.println(jsonRequest.toString());
 		} catch (JSONException e) {}
 	}
@@ -324,9 +322,7 @@ public class Client {
 			waitToVote();
 			// change phase
 			changePhase();
-			System.out.println("sudah malam");
-			
-			System.out.println("habis print list");
+
 			System.out.println("isAlive: " + isAlive);
 			if (!isAlive) {
 				System.out.println("You're dead");
@@ -352,20 +348,19 @@ public class Client {
 		// Get from server
 		System.out.println("Waiting for change phase");
 		readResponse();
+		System.out.println("SUMBER MASALAH : " + jsonResponse.toString());
 		if (playerId == kpuId)
 			readResponse();
-		System.out.println("inside changephase: " + jsonResponse.toString());
+		
 		try {
 			String method = jsonResponse.getString("method");
 			if (method.equals("change_phase")) {
 		    	time = jsonResponse.getString("time");
-		    	System.out.println("IN CHANGE PHASE: isAlive is " + isAlive);
+
 		    	if (jsonResponse.getInt("last_killed") == playerId){
 		    		isAlive = false;
 		    	}
-		    	System.out.println("IN CHANGE PHASE: last killed is " + jsonResponse.getInt("last_killed"));
-		    	System.out.println("IN CHANGE PHASE: my playerId is " + playerId);
-		    	System.out.println("IN CHANGE PHASE: isAlive is " + isAlive + " (2)");
+		    	
 			}
 
 			System.out.println("Change phase. Now is " + time);
@@ -449,7 +444,8 @@ public class Client {
 					if (role.equals("civilian")) {
 						System.out.println("It's night. Waiting...");
 						if (kpuId == playerId)
-							consensus = calculateWerewolfVote();
+							while(!consensus)
+								consensus = calculateWerewolfVote();
 					}
 					else {	// werewolf
 						while (!consensus) {
@@ -573,7 +569,7 @@ public class Client {
 		    		else if(jsonResponse.has("kpu")) {
 		    			kpuId = jsonResponse.getInt("kpu");
 		    			readResponse();
-		    			System.out.println("WOOOYYY " + jsonResponse.toString() );
+		    			
 		    			
 
 		    		}
@@ -598,7 +594,7 @@ public class Client {
 	}
 
 	public void acceptProposal() {
-		System.out.println("IN ACCEPTPROPOSAL");
+		
 		// Create json proposal
 		try{
 			jsonRequest = new JSONObject();
@@ -608,7 +604,7 @@ public class Client {
 	        proposal_id.put(playerId);
 	        jsonRequest.put("proposal_id", proposal_id);
 	        jsonRequest.put("kpu_id", playerId);
-	        System.out.println("PROPOSAL ID" + jsonRequest.toString());
+	        
 	    } catch (org.json.JSONException e) {}
 
 	    // Send json to every acceptor
@@ -675,12 +671,12 @@ public class Client {
 				jsonResponse = new JSONObject(response);
 				System.out.println("masuk nih" + response);
 				if (jsonResponse.getString("method").equals("prepare_proposal")){
-					System.out.println("IN WAITPROPOSAL, METHOD: PREPARE_PROPOSAL");
+					
 					int a = jsonResponse.getJSONArray("proposal_id").getInt(0);
 					int b = jsonResponse.getJSONArray("proposal_id").getInt(1);
 					int c = previousProposal[0];
 					int d = previousProposal[1];
-					System.out.println("ABCD: "+ a + " " + b + " " + c + " " + d);
+					
 					if (previousProposal[0] == 0 && previousProposal[1] == 0){	
 						jsonRequest = new JSONObject();
 					    jsonRequest.put("status", "ok");
@@ -723,14 +719,14 @@ public class Client {
 
 
 				} else if (jsonResponse.getString("method").equals("accept_proposal")){
-					System.out.println("IN WAITPROPOSAL, METHOD: ACCEPT_PROPOSAL");
+					
 
 					// send response to proposer
 					int a = jsonResponse.getJSONArray("proposal_id").getInt(0);
 					int b = jsonResponse.getJSONArray("proposal_id").getInt(1);
 					int c = previousProposal[0];
 					int d = previousProposal[1];
-					System.out.println("ABCD: "+ a + " " + b + " " + c + " " + d);
+					
 					if (previousProposal[0] == 0 && previousProposal[1] == 0){	
 						jsonRequest = new JSONObject();
 					    jsonRequest.put("status", "ok");
@@ -780,17 +776,16 @@ public class Client {
 				        	jsonRequest.put("description", "Kpu is selected");
 			        	} catch (org.json.JSONException e) {}
 				    	
-				    	// Send json
-				    	System.out.println("IN WAITPROPOSAL Request: " + jsonRequest.toString());
-				    	//System.out.println("Sending request: " + jsonRequest.toString());
+				    	
+				    	
 				    	out.println(jsonRequest.toString());
 
 						// read from server
 						readResponse();
-						System.out.println("IN WAITPROPOSAL Response: " + jsonResponse.toString());
+						
 						// ini untuk nerima ok, tapi bisa aja error? TODO HANDLE THIS
 						readResponse();
-						System.out.println("IN WAITPROPOSAL Response: " + jsonResponse.toString());
+						
 					   	try {
 					    	String method = jsonResponse.getString("method");
 					    	if (method.equals("kpu_selected")){
@@ -913,13 +908,13 @@ public class Client {
 
 		// Initialize array
 		int[] voteResult = new int[players.size()+1];
-		for (int i=0; i<+players.size(); i++)
+		for (int i=0; i<=players.size(); i++)
 			voteResult[i] = 0;
 
 		// Read from listener
 		int countVote = 0;
-		boolean timeout = false;
-		while (!timeout && countVote < playersActive()) {
+		checkTimeout = new CheckTimeout(maxTime);
+		while (!checkTimeout.isTimeout() && countVote < playersActive()) {
 			try {
 				if (messageQueue[0].size() > 0) {
 					JSONObject vote = new JSONObject((String) messageQueue[0].remove(0));

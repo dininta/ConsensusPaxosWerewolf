@@ -24,7 +24,7 @@ public class ServerThread extends Thread {
 	protected static InetAddress IPAddress;
     protected String request; 
 	protected String response;
-    public boolean tes = false;
+    public boolean changePhase = false;
     public int lastKilled;
 
     protected int player_id;
@@ -323,9 +323,9 @@ public class ServerThread extends Thread {
             out.println(jsonResponse.toString());
 
             //jangan lupa diganti isAlive
-            System.out.println("Choosing KPU, I am player number: " + player_id);
+            
             if(Server.kpuCounter.size() == Server.clients.size()-2) {
-                System.out.println("I am in, the kpuCounter.size() is = " + Server.kpuCounter.size());
+                
                 Server.kpuId = choosenKpu();
 
                 for(ServerThread player: Server.clients){
@@ -346,7 +346,7 @@ public class ServerThread extends Thread {
             if (status == 1) {
                 for(ServerThread player: Server.clients) {
                     player.lastKilled = jsonRequest.getInt("player_killed");
-                    System.out.println("IN VOTECIVILIAN: lastKilled is" + lastKilled);
+                    
                     if(player.getPlayerId() == jsonRequest.getInt("player_killed")){
                         player.kill();
                     }
@@ -360,7 +360,7 @@ public class ServerThread extends Thread {
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
             for(ServerThread player: Server.clients){
-                player.tes = true;
+                player.changePhase = true;
             }
             changePhase();
         } catch (org.json.JSONException e) {
@@ -388,7 +388,7 @@ public class ServerThread extends Thread {
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
             for(ServerThread player: Server.clients){
-                player.tes = true;
+                player.changePhase = true;
             }
             changePhase();
         } catch (org.json.JSONException e) {
@@ -398,11 +398,12 @@ public class ServerThread extends Thread {
 
     public void changePhase() {
         System.out.println("Player "+ player_id + " is going to changePhase");
-        while (!tes) {
+        while (!changePhase) {
             try {
                 sleep(500);
             } catch (InterruptedException e) {}
         }
+
         if (current_time.equals("night")) {
             current_time = "day";
             counter_day++;
@@ -427,6 +428,8 @@ public class ServerThread extends Thread {
         } catch (org.json.JSONException e) {
             sendErrorResponse();
         }
+        
+        changePhase = !changePhase;
     }
 
     public void vote() {
@@ -471,7 +474,6 @@ public class ServerThread extends Thread {
             jsonResponse.put("kpu_id", Server.kpuId);
             
             //kirim response
-            System.out.println(" Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
 
             lastMethod = "sendChoosenKpu";
