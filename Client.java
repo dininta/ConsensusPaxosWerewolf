@@ -568,15 +568,22 @@ public class Client {
 		    		}
 		    		else if(jsonResponse.has("kpu")) {
 		    			kpuId = jsonResponse.getInt("kpu");
-		    			readResponse();
-		    			
+		    			// response = messageQueue[0].remove(0).toString();
+		    			// while(jsonResponse.has("kpu") && messageQueue[0].size() > 0)
+		    			// 	response = messageQueue[0].remove(0).toString();
 		    			
 
 		    		}
 
 		    	} catch (org.json.JSONException e) {}
 	    	}
-		}	
+		}
+		//untuk baca kpu_selected
+		if(kpuId !=0) {
+			readResponse();
+		}
+			
+
 		if (checkTimeout.isTimeout()){
 			return false;
 		}
@@ -669,7 +676,6 @@ public class Client {
 			try{
 				response = messageQueue[0].remove(0).toString();
 				jsonResponse = new JSONObject(response);
-				System.out.println("masuk nih" + response);
 				if (jsonResponse.getString("method").equals("prepare_proposal")){
 					
 					int a = jsonResponse.getJSONArray("proposal_id").getInt(0);

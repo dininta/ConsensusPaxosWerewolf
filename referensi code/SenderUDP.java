@@ -13,7 +13,7 @@ public class SenderUDP {
 	{
 		BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
 
-		String targetAddress = "localhost";
+		String targetAddress = "192.168.43.236";
 		InetAddress IPAddress = InetAddress.getByName(targetAddress);
 		int targetPort = 9876;
 
