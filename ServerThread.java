@@ -361,8 +361,9 @@ public class ServerThread extends Thread {
             out.println(jsonResponse.toString());
             for(ServerThread player: Server.clients){
                 player.changePhase = true;
+                player.changePhase();
             }
-            changePhase();
+            
         } catch (org.json.JSONException e) {
             sendErrorResponse();
         }
@@ -376,33 +377,49 @@ public class ServerThread extends Thread {
             if (status == 1) {
                 for(ServerThread player: Server.clients) {
                     player.lastKilled = jsonRequest.getInt("player_killed");
-                    if(player.getPlayerId() == jsonRequest.getInt("player_killed") && player.getRole().equals("werewolf"))
+                    if(player.getPlayerId() == jsonRequest.getInt("player_killed"))
                         player.kill();
                 }
+                // send response to KPU
+                jsonResponse = new JSONObject();
+                jsonResponse.put("status", "ok");
+                jsonResponse.put("description", "");
+                System.out.println("Sending response: " + jsonResponse.toString());
+                out.println(jsonResponse.toString());
+                for(ServerThread player: Server.clients){
+                    player.changePhase = true;
+                    player.changePhase();
+
+                }
+                
+            } else {
+                // send response to KPU
+                jsonResponse = new JSONObject();
+                jsonResponse.put("status", "ok");
+                jsonResponse.put("description", "");
+                System.out.println("Sending response: " + jsonResponse.toString());
+                out.println(jsonResponse.toString());
+                for(int i=0; i<Server.clients.size(); i++){
+                    if(Server.clients.get(i).is_alive==0)
+                        continue;
+                    if(Server.clients.get(i).getRole().equals("werewolf") || Server.clients.get(i).player_id == Server.kpuId){
+                        Server.clients.get(i).vote();
+                    }
+                       
+                }
+                
             }
 
-            // send response to KPU
-            jsonResponse = new JSONObject();
-            jsonResponse.put("status", "ok");
-            jsonResponse.put("description", "");
-            System.out.println("Sending response: " + jsonResponse.toString());
-            out.println(jsonResponse.toString());
-            for(ServerThread player: Server.clients){
-                player.changePhase = true;
-            }
-            changePhase();
+
         } catch (org.json.JSONException e) {
             sendErrorResponse();
         }
     }
 
+
     public void changePhase() {
         System.out.println("Player "+ player_id + " is going to changePhase");
-        while (!changePhase) {
-            try {
-                sleep(500);
-            } catch (InterruptedException e) {}
-        }
+
 
         if (current_time.equals("night")) {
             current_time = "day";
@@ -443,13 +460,14 @@ public class ServerThread extends Thread {
             System.out.println("Player " + player_id + "is sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
 
-            if (player_id != Server.kpuId){
-                changePhase();
-            }
+            // if (player_id != Server.kpuId){
+            //     waitResult();
+            // }
         } catch (org.json.JSONException e) {
             sendErrorResponse();
         }
     }
+
 
     //leave
     public void leave(){

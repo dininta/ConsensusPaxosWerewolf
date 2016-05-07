@@ -315,11 +315,13 @@ public class Client {
 	}
 
 	public void startPlaying() {
+		boolean consensus = true;
 		while (isAlive) {
 			getListClient(true);
 			startElection();
 			// day
-			waitToVote();
+			readResponse();
+			consensus=waitToVote();
 			// change phase
 			changePhase();
 
@@ -331,7 +333,11 @@ public class Client {
 			else {
 				getListClient(true);
 				// night
-				waitToVote();
+				readResponse();
+				consensus=waitToVote();
+
+				while(!consensus)
+					consensus = waitToVote();
 				// change phase
 				changePhase();
 				getListClient(true);
@@ -345,12 +351,12 @@ public class Client {
 	}
 
 	public void changePhase() {
-		// Get from server
-		System.out.println("Waiting for change phase");
-		readResponse();
+		// // Get from server
+		// System.out.println("Waiting for change phase");
+		// readResponse();
 		System.out.println("SUMBER MASALAH : " + jsonResponse.toString());
-		if (playerId == kpuId)
-			readResponse();
+		// if (playerId == kpuId)
+		// 	readResponse();
 		
 		try {
 			String method = jsonResponse.getString("method");
@@ -428,9 +434,9 @@ public class Client {
 	    
 	}
 
-	public void waitToVote() {
-		// Get from server
-		readResponse();
+	public boolean waitToVote() {
+		
+		
 		try {
 			String method = jsonResponse.getString("method");
 			if (method.equals("vote_now")) {
@@ -440,23 +446,36 @@ public class Client {
 						calculateCivilianVote();
 				}
 				else {	// time == "night"
-					boolean consensus = false;
+					
 					if (role.equals("civilian")) {
 						System.out.println("It's night. Waiting...");
-						if (kpuId == playerId)
-							while(!consensus)
-								consensus = calculateWerewolfVote();
+						if (kpuId == playerId){
+							calculateWerewolfVote();
+							readResponse(); //read ok
+						}
 					}
 					else {	// werewolf
-						while (!consensus) {
-							killWerewolfVote();
-							if (kpuId == playerId)
-								consensus = calculateWerewolfVote();
+						killWerewolfVote();
+						if (kpuId == playerId) {
+							calculateWerewolfVote();
+							readResponse(); //read ok
 						}
+
+						
 					}
 				}
 			}
+			readResponse();
+			System.out.println("in wait to vote: " + jsonResponse.toString());
+			method = jsonResponse.getString("method");
+			if(method.equals("vote_now"))
+				return false;
+			else if(method.equals("change_phase"))
+				return true;
+			else
+				return false;
 		} catch (JSONException e) {}
+		return false;
 	}
 
 	public void readResponse(){
@@ -832,18 +851,21 @@ public class Client {
 
 	/*** METHOD FOR KPU ***/
 
-	public boolean calculateWerewolfVote() {
+	public void calculateWerewolfVote() {
 		// Menghitung hasil voting dari werewolf
 		// True if werewolf sudah sepakat
-
+	
 		int vote1 = 0, vote2 = 0;
 
 		// Read message from listener
 		int countWerewolf = werewolfActive();
-		while ((countWerewolf == 2 && vote1 == 0 && vote2 == 0) || (countWerewolf==1 && vote1==0)){
-			try {
-				if (messageQueue[0].size() > 0) {
-					JSONObject vote = new JSONObject((String) messageQueue[0].remove(0));
+		while ((countWerewolf == 2 && (vote1 == 0 || vote2 == 0)) || (countWerewolf==1 && vote1==0)){
+			System.out.print("");
+			if (messageQueue[0].size() > 0) {
+				try {	
+
+					JSONObject vote = new JSONObject((String) messageQueue[0].remove(0));			
+					System.out.println(vote.toString());
 					String method = vote.getString("method");
 					if (method.equals("vote_werewolf")) {
 						int targetId = vote.getInt("player_id");
@@ -868,9 +890,11 @@ public class Client {
 							sendFailResponse("", InetAddress.getByName(vote.getString("udp_address")), vote.getInt("udp_port"));
 						} catch (UnknownHostException e){}
 					}
-				}
-			} catch (JSONException e) {}
+				} catch (JSONException e) {}
+
+			} 
 		}
+		
 		if (countWerewolf == 2) {
 			if (vote1 == vote2) {
 				// Send to server
@@ -886,10 +910,30 @@ public class Client {
 	        	} catch (org.json.JSONException e) {}	    	
 		    	System.out.println("Sending request: " + jsonRequest.toString());
 		    	out.println(jsonRequest.toString());
-				return true;
+				
 			}
-			else
-				return false;
+			else {
+				try{
+					jsonRequest = new JSONObject();
+		        	jsonRequest.put("method", "vote_result_werewolf");
+		        	jsonRequest.put("vote_status", -1);
+		        	
+		        	JSONArray array = new JSONArray();
+		        	JSONArray array_temp1 = new JSONArray(2);
+		        	JSONArray array_temp2 = new JSONArray(2);
+		        	array_temp1.put(vote1);
+		        	array_temp1.put(1);
+		        	array_temp2.put(vote2);
+		        	array_temp2.put(1);
+		        	array.put(array_temp1);
+		        	array.put(array_temp2);
+
+		        	jsonRequest.put("vote_result", array);
+	        	} catch (org.json.JSONException e) {}	    	
+		    	System.out.println("Sending request: " + jsonRequest.toString());
+		    	out.println(jsonRequest.toString());
+			}
+				
 		}
 		else { // countWerewolf == 1
 			// Send to server
@@ -905,14 +949,16 @@ public class Client {
         	} catch (org.json.JSONException e) {}	    	
 	    	System.out.println("Sending request: " + jsonRequest.toString());
 	    	out.println(jsonRequest.toString());
-			return true;
+			
 		}
+		
 	}
 
 	public void calculateCivilianVote() {
 		// Menghitung voting dari seluruh civilian (voting werewolf mana yang mau dibunuh)
 
 		// Initialize array
+		
 		int[] voteResult = new int[players.size()+1];
 		for (int i=0; i<=players.size(); i++)
 			voteResult[i] = 0;
@@ -920,10 +966,13 @@ public class Client {
 		// Read from listener
 		int countVote = 0;
 		checkTimeout = new CheckTimeout(maxTime);
-		while (!checkTimeout.isTimeout() && countVote < playersActive()) {
-			try {
-				if (messageQueue[0].size() > 0) {
-					JSONObject vote = new JSONObject((String) messageQueue[0].remove(0));
+		while (countVote < playersActive()) {
+			System.out.print("");
+			if (messageQueue[0].size() > 0) {
+				
+				try {
+					JSONObject vote = new JSONObject((String) messageQueue[0].remove(0));	
+					
 					String method = vote.getString("method");
 					if (method.equals("vote_civilian")) {
 						int targetId = vote.getInt("player_id");
@@ -946,8 +995,9 @@ public class Client {
 							sendFailResponse("", InetAddress.getByName(vote.getString("udp_address")), vote.getInt("udp_port"));
 						} catch (UnknownHostException e){}
 					}
-				}
-			} catch (JSONException e) {}
+				} catch (JSONException e) {}
+			} 
+			
 		}
 
 		// Hitung siapa yang dapat vote tertinggi dan mayoritas tercapai atau tidak
@@ -984,6 +1034,9 @@ public class Client {
     	} catch (org.json.JSONException e) {}	    	
     	System.out.println("Sending request: " + jsonRequest.toString());
     	out.println(jsonRequest.toString());
+
+    	readResponse();
+		System.out.println("In calculate civilian: " + jsonResponse.toString());
 	}
 
 	//response untuk request UDP
