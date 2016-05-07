@@ -450,6 +450,7 @@ public class ServerThread extends Thread {
             jsonResponse.put("description", "");
             jsonResponse.put("last_killed", lastKilled);
 
+
             //kirim json
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
