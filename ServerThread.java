@@ -351,18 +351,31 @@ public class ServerThread extends Thread {
                         player.kill();
                     }
                 }
+                // send response to KPU
+                jsonResponse = new JSONObject();
+                jsonResponse.put("status", "ok");
+                jsonResponse.put("description", "");
+                System.out.println("Sending response: " + jsonResponse.toString());
+                out.println(jsonResponse.toString());
+                for(ServerThread player: Server.clients){
+                    player.changePhase = true;
+                    player.changePhase();
+                }                
+            } else {
+                                // send response to KPU
+                jsonResponse = new JSONObject();
+                jsonResponse.put("status", "ok");
+                jsonResponse.put("description", "");
+                System.out.println("Sending response: " + jsonResponse.toString());
+                out.println(jsonResponse.toString());
+                for(ServerThread player: Server.clients){
+                    if(player.getAlive()==0)
+                        continue;
+                    player.vote(); 
+                }
             }
 
-            // send response to KPU
-            jsonResponse = new JSONObject();
-            jsonResponse.put("status", "ok");
-            jsonResponse.put("description", "");
-            System.out.println("Sending response: " + jsonResponse.toString());
-            out.println(jsonResponse.toString());
-            for(ServerThread player: Server.clients){
-                player.changePhase = true;
-                player.changePhase();
-            }
+
             
         } catch (org.json.JSONException e) {
             sendErrorResponse();

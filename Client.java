@@ -321,7 +321,11 @@ public class Client {
 			startElection();
 			// day
 			readResponse();
-			consensus=waitToVote();
+			consensus=waitToVote(1);
+
+			//kalau belum mencapai kesepakatan, vote ulang
+			if(!consensus)
+				consensus = waitToVote(2);
 			// change phase
 			changePhase();
 
@@ -334,10 +338,10 @@ public class Client {
 				getListClient(true);
 				// night
 				readResponse();
-				consensus=waitToVote();
+				consensus=waitToVote(1);
 
 				while(!consensus)
-					consensus = waitToVote();
+					consensus = waitToVote(1);
 				// change phase
 				changePhase();
 				getListClient(true);
@@ -434,7 +438,7 @@ public class Client {
 	    
 	}
 
-	public boolean waitToVote() {
+	public boolean waitToVote(int count) {
 		
 		
 		try {
@@ -443,7 +447,7 @@ public class Client {
 				if (time.equals("day")) {
 					killCivilianVote();
 					if (kpuId == playerId)
-						calculateCivilianVote();
+						calculateCivilianVote(count);
 				}
 				else {	// time == "night"
 					
@@ -954,7 +958,7 @@ public class Client {
 		
 	}
 
-	public void calculateCivilianVote() {
+	public void calculateCivilianVote(int count) {
 		// Menghitung voting dari seluruh civilian (voting werewolf mana yang mau dibunuh)
 
 		// Initialize array
@@ -1017,7 +1021,7 @@ public class Client {
 		try{
 			jsonRequest = new JSONObject();
         	jsonRequest.put("method", "vote_result_civilian");
-        	if (playerKilled == 0)
+        	if (playerKilled == 0 && count==1)
         		jsonRequest.put("vote_status", -1);
         	else {
         		jsonRequest.put("vote_status", 1);
