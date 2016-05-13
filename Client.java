@@ -163,7 +163,6 @@ public class Client {
 		
 		int count = 0;
 		for (int i=0; i<players.size(); i++) {
-			System.out.println(i + " " + players.get(i).role);
 			if (players.get(i).role.equals("werewolf") && players.get(i).isAlive==1)
 				count++;
 		}
@@ -858,16 +857,27 @@ public class Client {
 
 						// read from server
 						readResponse();
-					
+						System.out.println("in wait proposal1 " + jsonResponse.toString());
 
 						// ini untuk nerima ok, tapi bisa aja error? TODO HANDLE THIS
 						readResponse();
+						System.out.println("in wait proposal2 " + jsonResponse.toString());
+
 						
+
 					   	try {
-					    	String method = jsonResponse.getString("method");
-					    	if (method.equals("kpu_selected")){
-					    		kpuId = jsonResponse.getInt("kpu_id");
-					    	}
+					   		//karena bisa jadi dia ngirim accepted dua kali
+					   		if(jsonResponse.has("method")){
+					   			String method = jsonResponse.getString("method");
+					    		if (method.equals("kpu_selected")){
+					    			kpuId = jsonResponse.getInt("kpu_id");
+					    		}
+					   		}
+					   		else {
+					   			readResponse();
+					   			System.out.println("in wait proposal3 " + jsonResponse.toString());
+					   		}
+
 					    		 
 						} catch (JSONException e) {}
 

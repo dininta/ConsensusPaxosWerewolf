@@ -311,6 +311,8 @@ public class ServerThread extends Thread {
 
     public void acceptProposal(){
         try{
+
+
             //mengambil kpu yang dipilih
             int id = jsonRequest.getInt("kpu_id");
             Server.kpuCounter.add(id);
@@ -332,8 +334,12 @@ public class ServerThread extends Thread {
 
                 for(ServerThread player: Server.clients){
                     player.sendChoosenKpu();
-                }                
+                }
+
+                Server.kpuCounter.clear();                
             }
+
+
             
          } catch (org.json.JSONException e) {
             sendErrorResponse();
