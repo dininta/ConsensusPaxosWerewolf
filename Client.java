@@ -490,6 +490,7 @@ public class Client {
 		
 		try {
 			String method = jsonResponse.getString("method");
+			
 			if (method.equals("vote_now")) {
 				if (time.equals("day")) {
 					killCivilianVote();
@@ -853,12 +854,12 @@ public class Client {
 			        	} catch (org.json.JSONException e) {}
 				    	
 				    	
-				    	
 				    	out.println(jsonRequest.toString());
 
 						// read from server
 						readResponse();
-						
+					
+
 						// ini untuk nerima ok, tapi bisa aja error? TODO HANDLE THIS
 						readResponse();
 						

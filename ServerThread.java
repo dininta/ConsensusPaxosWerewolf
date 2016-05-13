@@ -320,12 +320,13 @@ public class ServerThread extends Thread {
 
             jsonResponse.put("status", "ok");
             jsonResponse.put("description", "");
-            System.out.println("Sending response: " + jsonResponse.toString());
+            
+            System.out.println(player_id + " Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
 
             //jangan lupa diganti isAlive
-            // done zul :)
-            if(Server.kpuCounter.size() == playersActive()) {
+            
+            if(Server.kpuCounter.size() == playersActive()-2) {
                 
                 Server.kpuId = choosenKpu();
 
@@ -564,6 +565,7 @@ public class ServerThread extends Thread {
             jsonResponse.put("method", "kpu_selected");
             jsonResponse.put("kpu_id", Server.kpuId);
             
+            System.out.println("send choosen kpu " + player_id + jsonResponse.toString());
             //kirim response
             out.println(jsonResponse.toString());
 
@@ -660,7 +662,7 @@ public class ServerThread extends Thread {
         }
         if(found) {
             for (int j = 0; j < Server.kpuCounter.size(); j++){
-                if (Server.kpuCounter.get(i) == candidate1){
+                if (Server.kpuCounter.get(j) == candidate1){
                     count1++;
                 } else {
                     count2++;
