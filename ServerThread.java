@@ -13,7 +13,7 @@ import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
-import java.util.*;
+import java.util.*; 
 import java.net.InetAddress;
 
 public class ServerThread extends Thread {
@@ -429,10 +429,68 @@ public class ServerThread extends Thread {
         }
     }
 
+    //melihat apakah sudah game over
+    public int isGameOver(){
+        int werewolf = 0;
+        int civilian = 0;
+
+        for(ServerThread player : Server.clients) {
+            if(player.is_alive==1){
+                if(player.role.equals("werewolf")){
+                    werewolf++;
+                }else if (player.role.equals("civilian")){
+                    civilian++;
+                }
+            }
+        }
+        if (werewolf >= civilian)
+            return 1;
+        else if (werewolf == 0)
+            return 2;
+        else
+            return 0;
+    }
+
+    public void gameOver(int winner){
+        try{
+            String winner_name = "";
+            if (winner == 1){
+                winner_name = "werewolf";
+            } else if (winner == 2){
+                winner_name = "civilian";
+            }
+            jsonResponse = new JSONObject();
+            jsonResponse.put("method", "game_over");
+            jsonResponse.put("winner", winner_name);
+            jsonResponse.put("description", "The game is over!!!, the winner is the " + winner_name);
+
+            //kirim json
+            System.out.println("Sending Game Over Message: " + jsonResponse.toString());
+            out.println(jsonResponse.toString());
+
+            lastMethod = "gameOver";
+        } catch (org.json.JSONException e) {
+            sendErrorResponse();
+        }
+
+        //reset everything
+
+        is_alive = 0;
+        isReady = false;
+        lastMethod = "";
+        lastKilled = 0;
+        role = "";
+        current_time = "day";  // day or night
+        counter_day = 1;
+    }
 
     public void changePhase() {
-        System.out.println("Player "+ player_id + " is going to changePhase");
-
+        System.out.println("Player "+ player_id + " is going to changePhase, or maybe game over");
+        int isGameOver = isGameOver();
+        if (isGameOver == 1 || isGameOver == 2){
+            gameOver(isGameOver);
+            return;
+        }
 
         if (current_time.equals("night")) {
             current_time = "day";
@@ -626,6 +684,7 @@ public class ServerThread extends Thread {
         }
 
     }
+
 
     //setter
     public void kill() {
