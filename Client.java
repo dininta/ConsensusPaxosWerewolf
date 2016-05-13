@@ -91,8 +91,8 @@ public class Client {
 			// UDP Socket
 			udpPort = port;
 			InetAddress inetAddress = InetAddress.getLocalHost();
-			udpAddress = inetAddress.getHostAddress();
-			//udpAddress = "192.168.43.236";
+			//udpAddress = inetAddress.getHostAddress();
+			udpAddress = "192.168.43.101";
 			datagramSocket = new DatagramSocket();
 			listenSocket = new DatagramSocket(udpPort);
 			messageQueue[0] = new ArrayList<String>();
@@ -348,12 +348,13 @@ public class Client {
 			//kalau belum mencapai kesepakatan, vote ulang
 			if(!consensus)
 				consensus = waitToVote(2);
-			// change phase
-			changePhase();
+			// check if game over
 			if (gameOver) {
 				reset();
-				break;
+				return;
 			}
+			// change phase
+			changePhase();
 
 			System.out.println("isAlive: " + isAlive);
 			if (!isAlive) {
@@ -369,13 +370,13 @@ public class Client {
 
 				while(!consensus)
 					consensus = waitToVote(1);
-
-				// change phase
-				changePhase();
+				// check if game over
 				if (gameOver) {
 					reset();
-					break;
+					return;
 				}
+				// change phase
+				changePhase();
 
 				getListClient(true);
 				if (!isAlive) {
@@ -415,10 +416,6 @@ public class Client {
 		    		isAlive = false;
 		    	}
 		    	System.out.println("Change phase. Now is " + time);
-			}
-			else if (method.equals("game_over")) {
-				gameOver = true;
-				System.out.println("Game Over. Winner: " + jsonResponse.getString("winner"));
 			}
 
 			// send back to server
@@ -515,12 +512,23 @@ public class Client {
 					}
 				}
 			}
+			else if (method.equals("game_over")) {
+				gameOver = true;
+				System.out.println("Game Over. Winner: " + jsonResponse.getString("winner"));
+				return true;
+			}
+			
 			readResponse();
 			method = jsonResponse.getString("method");
 			if(method.equals("vote_now"))
 				return false;
 			else if(method.equals("change_phase"))
 				return true;
+			else if (method.equals("game_over")) {
+				gameOver = true;
+				System.out.println("Game Over. Winner: " + jsonResponse.getString("winner"));
+				return true;
+			}
 			else
 				return false;
 		} catch (JSONException e) {}

@@ -493,13 +493,8 @@ public class ServerThread extends Thread {
     }
 
     public void changePhase() {
-        System.out.println("Player "+ player_id + " is going to changePhase, or maybe game over");
-        int isGameOver = isGameOver();
-        if (isGameOver == 1 || isGameOver == 2){
-            gameOver(isGameOver);
-            return;
-        }
-
+        System.out.println("Player "+ player_id + " is going to changePhase, or maybe game over. isgameover=" + isGameOver());
+        
         if (current_time.equals("night")) {
             current_time = "day";
             counter_day++;
@@ -530,7 +525,12 @@ public class ServerThread extends Thread {
     }
 
     public void vote() {
-        System.out.println("Player " + player_id +" is in vote()");
+        System.out.println("Player " + player_id +" is in vote() isgameover=" + isGameOver());
+        int isGameOver = isGameOver();
+        if (isGameOver == 1 || isGameOver == 2){
+            gameOver(isGameOver);
+            return;
+        }
         try{
             jsonResponse = new JSONObject();
             jsonResponse.put("method", "vote_now");
