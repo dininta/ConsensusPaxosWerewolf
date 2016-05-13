@@ -247,6 +247,7 @@ public class ServerThread extends Thread {
                 obj.put("address", Server.clients.get(i).getAddress());
                 obj.put("port", Server.clients.get(i).getPort());
                 obj.put("username", Server.clients.get(i).getUsername());
+                obj.put("role", Server.clients.get(i).getRole());
                 list.put(obj);
             }
 

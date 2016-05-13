@@ -41,7 +41,7 @@ public class Client {
 			this.role = role;
 		}
 		public void print() {
-			System.out.println(playerId + ";" + isAlive+ ";" + address+ ";" + port+ ";" + username+ ";" + role);
+			System.out.println(playerId + ";" + isAlive+ ";" + address+ ";" + port+ ";" + username);
 		}
 	}
 
@@ -149,19 +149,23 @@ public class Client {
 	public int playersActive() {
 		// Return the number of active players
 		int count = 0;
-		for (int i=0; i<players.size(); i++)
+		for (int i=0; i<players.size(); i++) {
 			if (players.get(i).isAlive == 1)
 				count++;
+		}	
 		return count;
 	}
 
 	public int werewolfActive() {
 		// Return the number of active werewolf
+		
 		int count = 0;
-		for (int i=0; i<players.size(); i++)
-			if (players.get(i).role.equals("werewolf"))
+		for (int i=0; i<players.size(); i++) {
+			System.out.println(i + " " + players.get(i).role);
+			if (players.get(i).role.equals("werewolf") && players.get(i).isAlive==1)
 				count++;
-		count = 2 - count;
+		}
+			
 		return count;
 	}
 
