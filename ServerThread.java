@@ -258,7 +258,7 @@ public class ServerThread extends Thread {
             System.out.println("Sending response: " + jsonResponse.toString());
             out.println(jsonResponse.toString());
 
-            if (lastMethod.equals("changePhase"))
+            if (lastMethod.equals("changePhase") && current_time.equals("night"))
                 vote();
          } catch (org.json.JSONException e) {
             sendErrorResponse();

@@ -486,7 +486,6 @@ public class Client {
 
 	public boolean waitToVote(int count) {
 		
-		
 		try {
 			String method = jsonResponse.getString("method");
 			
@@ -517,7 +516,6 @@ public class Client {
 				}
 			}
 			readResponse();
-			System.out.println("in wait to vote: " + jsonResponse.toString());
 			method = jsonResponse.getString("method");
 			if(method.equals("vote_now"))
 				return false;
