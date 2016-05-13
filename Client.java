@@ -41,7 +41,7 @@ public class Client {
 			this.role = role;
 		}
 		public void print() {
-			System.out.println(playerId + ";" + isAlive+ ";" + address+ ";" + port+ ";" + username+ ";" + role);
+			System.out.println(playerId + ";" + isAlive+ ";" + address+ ";" + port+ ";" + username);
 		}
 	}
 
@@ -77,6 +77,7 @@ public class Client {
 	protected String role;
 	protected String time;
 	protected CheckTimeout checkTimeout;
+	protected boolean gameOver;
 
 	// constants
 	protected final long maxTime = 3000;
@@ -149,19 +150,23 @@ public class Client {
 	public int playersActive() {
 		// Return the number of active players
 		int count = 0;
-		for (int i=0; i<players.size(); i++)
+		for (int i=0; i<players.size(); i++) {
 			if (players.get(i).isAlive == 1)
 				count++;
+		}	
 		return count;
 	}
 
 	public int werewolfActive() {
 		// Return the number of active werewolf
+		
 		int count = 0;
-		for (int i=0; i<players.size(); i++)
-			if (players.get(i).role.equals("werewolf"))
+		for (int i=0; i<players.size(); i++) {
+			System.out.println(i + " " + players.get(i).role);
+			if (players.get(i).role.equals("werewolf") && players.get(i).isAlive==1)
 				count++;
-		count = 2 - count;
+		}
+			
 		return count;
 	}
 
@@ -254,6 +259,23 @@ public class Client {
 		} catch (JSONException e) {}
 	}
 
+	public boolean isProposer() {
+		// true if i'm proposer
+		int i = players.size()-1;
+		int found = 0;
+		boolean answer = false;
+		while(i >= 0 && found < 2 && !answer){
+			if(players.get(i).isAlive == 1){
+				if(players.get(i).playerId == playerId){
+					answer = true;
+				}
+				found++;
+			}
+			i--;
+		}
+		return answer;
+	}
+
 	public void startElection(){
 		messageQueue[0].clear();
 		//cuma buat print doang
@@ -262,7 +284,7 @@ public class Client {
 
 		while (kpuId==0){
 			//System.out.println("KPUID: " + kpuId);
-			if (playerId >= players.size() - 1){//ntar jadi players.size() yhaa
+			if (isProposer()) {
 				System.out.println("I'm proposer");
 			    boolean success = prepareProposal();
 			    if(success) {
@@ -328,6 +350,7 @@ public class Client {
 				consensus = waitToVote(2);
 			// change phase
 			changePhase();
+			if (gameOver) break;
 
 			System.out.println("isAlive: " + isAlive);
 			if (!isAlive) {
@@ -336,14 +359,18 @@ public class Client {
 			}
 			else {
 				getListClient(true);
+
 				// night
 				readResponse();
 				consensus=waitToVote(1);
 
 				while(!consensus)
 					consensus = waitToVote(1);
+
 				// change phase
 				changePhase();
+				if (gameOver) break;
+
 				getListClient(true);
 				if (!isAlive) {
 					System.out.println("You're dead");
@@ -358,7 +385,7 @@ public class Client {
 		// // Get from server
 		// System.out.println("Waiting for change phase");
 		// readResponse();
-		System.out.println("SUMBER MASALAH : " + jsonResponse.toString());
+		// System.out.println("SUMBER MASALAH : " + jsonResponse.toString());
 		// if (playerId == kpuId)
 		// 	readResponse();
 		
@@ -370,10 +397,12 @@ public class Client {
 		    	if (jsonResponse.getInt("last_killed") == playerId){
 		    		isAlive = false;
 		    	}
-		    	
+		    	System.out.println("Change phase. Now is " + time);
 			}
-
-			System.out.println("Change phase. Now is " + time);
+			else if (method.equals("game_over")) {
+				gameOver = true;
+				System.out.println("Game Over. Winner: " + jsonResponse.getString("winner"));
+			}
 
 			// send back to server
 			jsonRequest = new JSONObject();
