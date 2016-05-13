@@ -77,7 +77,7 @@ public class Client {
 	protected String role;
 	protected String time;
 	protected CheckTimeout checkTimeout;
-	protected boolean gameOver;
+	protected boolean gameOver = false;
 
 	// constants
 	protected final long maxTime = 3000;
@@ -92,6 +92,7 @@ public class Client {
 			udpPort = port;
 			InetAddress inetAddress = InetAddress.getLocalHost();
 			udpAddress = inetAddress.getHostAddress();
+			//udpAddress = "192.168.43.236";
 			datagramSocket = new DatagramSocket();
 			listenSocket = new DatagramSocket(udpPort);
 			messageQueue[0] = new ArrayList<String>();
@@ -350,7 +351,10 @@ public class Client {
 				consensus = waitToVote(2);
 			// change phase
 			changePhase();
-			if (gameOver) break;
+			if (gameOver) {
+				reset();
+				break;
+			}
 
 			System.out.println("isAlive: " + isAlive);
 			if (!isAlive) {
@@ -369,7 +373,10 @@ public class Client {
 
 				// change phase
 				changePhase();
-				if (gameOver) break;
+				if (gameOver) {
+					reset();
+					break;
+				}
 
 				getListClient(true);
 				if (!isAlive) {
@@ -379,6 +386,17 @@ public class Client {
 			}
 		}
 			
+	}
+
+	public void reset() {
+		username = "";
+    	isAlive = false;
+    	playerId = 0;
+    	counterProposal = 0;
+    	players.clear();
+		role = "";
+		time = "";
+		gameOver = false;
 	}
 
 	public void changePhase() {
