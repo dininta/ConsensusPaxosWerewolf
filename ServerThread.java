@@ -327,7 +327,7 @@ public class ServerThread extends Thread {
             out.println(jsonResponse.toString());
 
             //jangan lupa diganti isAlive
-            
+
             if(Server.kpuCounter.size() == playersActive()-2) {
                 
                 Server.kpuId = choosenKpu();
