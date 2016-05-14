@@ -41,7 +41,7 @@ public class Client {
 			this.role = role;
 		}
 		public void print() {
-			System.out.println(playerId + ";" + isAlive+ ";" + address+ ";" + port+ ";" + username);
+			System.out.println("Player ID: " + playerId+ ", Username: " + username + ", Is alive: " + isAlive+ ", Address: " + address+ ", Port: " + port);
 		}
 	}
 
@@ -91,8 +91,8 @@ public class Client {
 			// UDP Socket
 			udpPort = port;
 			InetAddress inetAddress = InetAddress.getLocalHost();
-			//udpAddress = inetAddress.getHostAddress();
-			udpAddress = "192.168.43.101";
+			udpAddress = inetAddress.getHostAddress();
+			//udpAddress = "192.168.43.101";
 			datagramSocket = new DatagramSocket();
 			listenSocket = new DatagramSocket(udpPort);
 			messageQueue[0] = new ArrayList<String>();
@@ -197,12 +197,12 @@ public class Client {
 		    String status = jsonResponse.getString("status");
 		    if (status.equals("ok")) {
 		    	playerId = jsonResponse.getInt("player_id");
-		    	System.out.println("Your player ID is: " + playerId);
+		    	System.out.println("You have successfully joined the game, your player ID is: " + playerId);
+		    	System.out.println("Type 'ready' when you're ready to play");
 		    	isAlive = true;
 		    }
 		    else { // status == "fail" or status == "error"
-		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
-		    	
+		    	System.out.println("Oops, your request is considered " + jsonResponse.getString("status") + " by the server because " + jsonResponse.getString("description"));
 		    }
 		} catch (JSONException e) {}
 		
@@ -221,11 +221,11 @@ public class Client {
 	    try {
 		    String status = jsonResponse.getString("status");
 		    if (status.equals("ok")) {
-		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
+		    	System.out.println(jsonResponse.getString("status") + ", " + jsonResponse.getString("description"));
 		    	startGame();
 		    }
 		    else { // status == "fail" or status == "error"
-		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
+		    	System.out.println("Oops, your request is considered " + jsonResponse.getString("status") + " by the server because " + jsonResponse.getString("description"));
 		    }
 		} catch (JSONException e) {}
 		
@@ -238,23 +238,21 @@ public class Client {
 		    if (method.equals("start")) {
 		    	time = jsonResponse.getString("time");
 		    	role = jsonResponse.getString("role");
-		    	System.out.println("time: " + jsonResponse.getString("time"));
-		    	System.out.println("role: " + jsonResponse.getString("role"));
-		    	System.out.println("description: " + jsonResponse.getString("description"));
+		    	System.out.println("It is " + jsonResponse.getString("time") + "time, you are a " + jsonResponse.getString("role") + ", " + jsonResponse.getString("description"));
 		    	if (role.equals("werewolf")){
-		    		System.out.println("friend: " + jsonResponse.getJSONArray("friend"));
+		    		System.out.println("Since you are a werewolf, here are your friend(s) ID: " + jsonResponse.getJSONArray("friend"));
 		    	}
 				jsonRequest = new JSONObject();
 			    jsonRequest.put("status", "ok");
 
-			    System.out.println("IN STARTGAME Request: " + jsonRequest.toString());
+			    System.out.println("Sending response: " + jsonRequest.toString());
 			    out.println(jsonRequest.toString());
 			    startPlaying();
 			    
 		    }
 		    else { // status == "fail" or status == "error"
 		    	
-		    	System.out.println(jsonResponse.getString("status") + ": " + jsonResponse.getString("description"));
+		    	System.out.println("Oops, your request is considered " + jsonResponse.getString("status") + " by the server because " + jsonResponse.getString("description"));
 		    }
 		} catch (JSONException e) {}
 	}
@@ -285,7 +283,7 @@ public class Client {
 		while (kpuId==0){
 			//System.out.println("KPUID: " + kpuId);
 			if (isProposer()) {
-				System.out.println("I'm proposer");
+				System.out.println("You are a proposer");
 			    boolean success = prepareProposal();
 			    if(success) {
 			    	System.out.println("success");
@@ -305,13 +303,13 @@ public class Client {
 			else{
 				//cuma buat print 
 				if(cek){
-					System.out.println("I'm acceptor");
+					System.out.println("You are an acceptor");
 					cek = false;
 				}	
 			    waitProposal();
 			}
 		}
-		System.out.println("KPU terpilih: " + kpuId);
+		System.out.println("The chosen KPU is player number " + kpuId);
 		boolean found = false;
 		int i = 0;
 		while (!found) {
@@ -415,7 +413,7 @@ public class Client {
 		    	if (jsonResponse.getInt("last_killed") == playerId){
 		    		isAlive = false;
 		    	}
-		    	System.out.println("Change phase. Now is " + time);
+		    	System.out.println("The phase has changed, now is " + time + "time");
 			}
 
 			// send back to server
@@ -468,7 +466,7 @@ public class Client {
 
 				if(print){
 					// Print players
-					System.out.println("List of players received");
+					System.out.println("Here are the players list");
 					for (int i=0; i<players.size(); i++) {
 						players.get(i).print();
 					}
@@ -495,7 +493,7 @@ public class Client {
 				else {	// time == "night"
 					
 					if (role.equals("civilian")) {
-						System.out.println("It's night. Waiting...");
+						System.out.println("Just wait and go to sleep, the werewolves are discussing their target...");
 						if (kpuId == playerId){
 							calculateWerewolfVote();
 							readResponse(); //read ok
@@ -539,6 +537,7 @@ public class Client {
         try{
             response = in.readLine();
             jsonResponse = new JSONObject(response);
+            System.out.println("Response from server: " + jsonResponse.toString());
         } catch (IOException e) {
             e.printStackTrace();
             response = "IOException: " + e.toString();
@@ -576,7 +575,7 @@ public class Client {
 	public void killCivilianVote() {
 		// Get player ID to be killed
 		BufferedReader inFromuser = new BufferedReader(new InputStreamReader(System.in));
-		System.out.print("Which werewolf do you want to kill? Insert player id: ");
+		System.out.println("Which werewolf do you want to kill? Type the player id: ");
 		int target = 0;
 		try {
 			target = Integer.parseInt(inFromuser.readLine());
@@ -614,7 +613,7 @@ public class Client {
 	    } catch (org.json.JSONException e) {}
 
 	    // Send json to every acceptor
-	    System.out.println("UDP Request: " + jsonRequest);
+	    System.out.println("Sending to all other players: " + jsonRequest);
 		byte[] sendData = jsonRequest.toString().getBytes();
 		for (int i=0; i<players.size(); i++) {
 			if (players.get(i).playerId != playerId && players.get(i).isAlive == 1) {
@@ -677,6 +676,7 @@ public class Client {
 	}
 
 	public void acceptProposal() {
+		System.out.println("in acceptProposal()");
 		
 		// Create json proposal
 		try{
@@ -793,7 +793,7 @@ public class Client {
 				    }
 					byte[] sendData = jsonRequest.toString().getBytes();
 					try {
-						System.out.println("Sending: " + jsonRequest.toString());
+						System.out.println("Sending proposer: " + jsonRequest.toString());
 						DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, proposerAddress, proposerPort);
 						datagramSocket.send(sendPacket);
 					} catch (UnknownHostException e){
@@ -843,7 +843,7 @@ public class Client {
 				    }
 					byte[] sendData = jsonRequest.toString().getBytes();
 					try {
-						System.out.println("Sending: " + jsonRequest.toString());
+						System.out.println("Sending to proposer: " + jsonRequest.toString());
 						DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, proposerAddress, proposerPort);
 						datagramSocket.send(sendPacket);
 					} catch (UnknownHostException e){
@@ -863,11 +863,8 @@ public class Client {
 
 						// read from server
 						readResponse();
-						System.out.println("in wait proposal1 " + jsonResponse.toString());
-
 						// ini untuk nerima ok, tapi bisa aja error? TODO HANDLE THIS
 						readResponse();
-						System.out.println("in wait proposal2 " + jsonResponse.toString());
 
 						
 
@@ -881,7 +878,6 @@ public class Client {
 					   		}
 					   		else {
 					   			readResponse();
-					   			System.out.println("in wait proposal3 " + jsonResponse.toString());
 					   		}
 
 					    		 
@@ -895,7 +891,7 @@ public class Client {
 					    } catch (org.json.JSONException e) {}
 
 					    // Send json to every one
-					    System.out.println("dummy: " + jsonRequest);
+					    System.out.println("Sending to other players: " + jsonRequest);
 						sendData = jsonRequest.toString().getBytes();
 						for (int i=0; i<players.size(); i++) {
 							if (players.get(i).playerId != playerId && players.get(i).isAlive == 1) {
@@ -933,7 +929,6 @@ public class Client {
 				try {	
 
 					JSONObject vote = new JSONObject((String) messageQueue[0].remove(0));			
-					System.out.println(vote.toString());
 					String method = vote.getString("method");
 					if (method.equals("vote_werewolf")) {
 						int targetId = vote.getInt("player_id");
@@ -976,7 +971,7 @@ public class Client {
 		        	array.put(2);
 		        	jsonRequest.put("vote_result", array);
 	        	} catch (org.json.JSONException e) {}	    	
-		    	System.out.println("Sending request: " + jsonRequest.toString());
+		    	System.out.println("Sending request to server: " + jsonRequest.toString());
 		    	out.println(jsonRequest.toString());
 				
 			}
@@ -998,7 +993,7 @@ public class Client {
 
 		        	jsonRequest.put("vote_result", array);
 	        	} catch (org.json.JSONException e) {}	    	
-		    	System.out.println("Sending request: " + jsonRequest.toString());
+		    	System.out.println("Sending request to server: " + jsonRequest.toString());
 		    	out.println(jsonRequest.toString());
 			}
 				
@@ -1015,7 +1010,7 @@ public class Client {
 	        	array.put(1);
 	        	jsonRequest.put("vote_result", array);
         	} catch (org.json.JSONException e) {}	    	
-	    	System.out.println("Sending request: " + jsonRequest.toString());
+	    	System.out.println("Sending request to server: " + jsonRequest.toString());
 	    	out.println(jsonRequest.toString());
 			
 		}
@@ -1100,11 +1095,10 @@ public class Client {
         	}
         	jsonRequest.put("vote_result", array);
     	} catch (org.json.JSONException e) {}	    	
-    	System.out.println("Sending request: " + jsonRequest.toString());
+    	System.out.println("Sending request to server: " + jsonRequest.toString());
     	out.println(jsonRequest.toString());
 
     	readResponse();
-		System.out.println("In calculate civilian: " + jsonResponse.toString());
 	}
 
 	//response untuk request UDP

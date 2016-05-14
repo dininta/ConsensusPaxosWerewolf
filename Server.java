@@ -50,7 +50,7 @@ public class Server {
             while (true) {
                 ServerThread client = new ServerThread(serverSocket.accept());
                 client.start();
-                System.out.println("socket : " + client.getSocket());
+                System.out.println("A client just connected, details: " + client.getSocket());
             }
         } catch (IOException e) {
             System.err.println("Could not listen on port " + dstPort);
@@ -62,13 +62,13 @@ public class Server {
         try {
             out.close();
             serverSocket.close();
+            System.out.println("Server stopped");
         } catch (IOException e) {e.printStackTrace();}
 
     }
 	public static void main(String args[]) throws Exception
 	{
 	   Server server = new Server();
-       server.run();         
-       
+       server.run();          
 	}
 }

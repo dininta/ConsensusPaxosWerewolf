@@ -29,7 +29,7 @@ public class UDPListenerThread extends Thread {
 				JSONObject obj = new JSONObject(message);
 				obj.put("udp_address", receivePacket.getAddress());
 				obj.put("udp_port", receivePacket.getPort());
-				System.out.println("Received: " + obj.toString());
+				System.out.println("Received from other player: " + obj.toString());
 				messageQueue[0].add(obj.toString());
 			} catch (JSONException e) {}
 		}
