@@ -16,7 +16,17 @@ import java.util.*;
 import java.net.InetAddress;
 
 public class Server {
-	
+	//color text
+    public static final String ANSI_RESET = "\u001B[0m";
+    public static final String ANSI_BLACK = "\u001B[30m";
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_BLUE = "\u001B[34m";
+    public static final String ANSI_PURPLE = "\u001B[35m";
+    public static final String ANSI_CYAN = "\u001B[36m";
+    public static final String ANSI_WHITE = "\u001B[37m";
+
 	protected static String dstAddress;
 	protected static int dstPort;
 	protected static InetAddress IPAddress;
@@ -46,11 +56,11 @@ public class Server {
 
     public void run(){
         try (ServerSocket serverSocket = new ServerSocket(dstPort)) { 
-            System.out.println("Server is running");
+            System.out.println(ANSI_YELLOW + "Server is running" + ANSI_RESET);
             while (true) {
                 ServerThread client = new ServerThread(serverSocket.accept());
                 client.start();
-                System.out.println("A client just connected, details: " + client.getSocket());
+                System.out.println(ANSI_YELLOW + "A client just connected, details: " + client.getSocket() + ANSI_RESET);
             }
         } catch (IOException e) {
             System.err.println("Could not listen on port " + dstPort);
