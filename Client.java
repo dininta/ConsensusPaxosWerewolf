@@ -360,6 +360,11 @@ public class Client {
 		boolean consensus = true;
 		while (isAlive) {
 			getListClient(true);
+			// check if game over
+			if (gameOver) {
+				reset();
+				return;
+			}
 			startElection();
 			// day
 			readResponse();
@@ -368,11 +373,7 @@ public class Client {
 			//kalau belum mencapai kesepakatan, vote ulang
 			if(!consensus)
 				consensus = waitToVote(2);
-			// check if game over
-			if (gameOver) {
-				reset();
-				return;
-			}
+			
 			// change phase
 			changePhase();
 
@@ -383,22 +384,27 @@ public class Client {
 			}
 			else {
 				getListClient(true);
-
+				// check if game over
+				if (gameOver) {
+					reset();
+					return;
+				}
 				// night
 				readResponse();
 				consensus=waitToVote(1);
 
 				while(!consensus)
 					consensus = waitToVote(1);
+				
+				// change phase
+				changePhase();
+
+				getListClient(true);
 				// check if game over
 				if (gameOver) {
 					reset();
 					return;
 				}
-				// change phase
-				changePhase();
-
-				getListClient(true);
 				if (!isAlive) {
 					System.out.println(ANSI_YELLOW + "You're dead" + ANSI_RESET);
 					break;
@@ -438,6 +444,21 @@ public class Client {
 		    	System.out.println(ANSI_YELLOW + "The phase has changed, now is " + time + "time" + ANSI_RESET);
 			}
 
+			if(jsonResponse.has("kpu_id")) {
+				kpuId = jsonResponse.getInt("kpu_id");
+				boolean found = false;
+				int i = 0;
+				while (!found) {
+					if (players.get(i).playerId == kpuId) {
+						found = true;
+						try {
+							kpuAddress = InetAddress.getByName(players.get(i).address);
+							kpuPort = players.get(i).port;
+						} catch (UnknownHostException e) {}
+					}
+					i++;
+				}
+			}
 			// send back to server
 			jsonRequest = new JSONObject();
 			jsonRequest.put("status", "ok");
@@ -463,45 +484,54 @@ public class Client {
 	    // Get server response
 	    readResponse();
 	    try {
+	    	if (jsonResponse.has("method")){
+	    		String method = jsonResponse.getString("method");
+	    		if (method.equals("game_over")){
+	    			gameOver = true;
+	    			System.out.println(ANSI_YELLOW + "Game Over.Winner: " + jsonResponse.getString("winner") + ANSI_RESET);
+	    			return;
+	    		}
+	    	} else if (jsonResponse.has("status")){
 		    String status = jsonResponse.getString("status");
-		    if (status.equals("ok")) {
+			    if (status.equals("ok")) {
 
-		    	players.clear();
-		    	JSONArray clients = jsonResponse.getJSONArray("clients");
-		    	for (int i = 0; i < clients.length(); ++i) {
-				    JSONObject client = clients.getJSONObject(i);
-				    Player player;
+			    	players.clear();
+			    	JSONArray clients = jsonResponse.getJSONArray("clients");
+			    	for (int i = 0; i < clients.length(); ++i) {
+					    JSONObject client = clients.getJSONObject(i);
+					    Player player;
 
-				    if (client.has("role"))
-				    	player = new Player (	client.getInt("player_id"),
-				    							client.getInt("is_alive"),
-				    							client.getString("address"),
-				    							client.getInt("port"),
-				    							client.getString("username"),
-				    							client.getString("role") );
-				    else
-				    	player = new Player (	client.getInt("player_id"),
-				    							client.getInt("is_alive"),
-				    							client.getString("address"),
-				    							client.getInt("port"),
-				    							client.getString("username") );
-				    players.add(player);
+					    if (client.has("role"))
+					    	player = new Player (	client.getInt("player_id"),
+					    							client.getInt("is_alive"),
+					    							client.getString("address"),
+					    							client.getInt("port"),
+					    							client.getString("username"),
+					    							client.getString("role") );
+					    else
+					    	player = new Player (	client.getInt("player_id"),
+					    							client.getInt("is_alive"),
+					    							client.getString("address"),
+					    							client.getInt("port"),
+					    							client.getString("username") );
+					    players.add(player);
 
-				    if ((client.getInt("player_id") == playerId) && (isAlive) && (client.getInt("is_alive") == 0)){ // my player data
-				    	isAlive = false;
-				    }
-				}
-
-				if(print){
-					// Print players
-					System.out.println(ANSI_YELLOW + "Here are the players list" + ANSI_RESET);
-					for (int i=0; i<players.size(); i++) {
-						players.get(i).print();
+					    if ((client.getInt("player_id") == playerId) && (isAlive) && (client.getInt("is_alive") == 0)){ // my player data
+					    	isAlive = false;
+					    }
 					}
+
+					if(print){
+						// Print players
+						System.out.println(ANSI_YELLOW + "Here are the players list" + ANSI_RESET);
+						for (int i=0; i<players.size(); i++) {
+							players.get(i).print();
+						}
+					}
+			    }
+			    else {
+			    	System.out.println(ANSI_YELLOW + jsonResponse.getString("status") + ": " + jsonResponse.getString("description") + ANSI_RESET);
 				}
-		    }
-		    else {
-		    	System.out.println(ANSI_YELLOW + jsonResponse.getString("status") + ": " + jsonResponse.getString("description") + ANSI_RESET);
 			}
 		} catch (JSONException e) {}
 	    
@@ -521,7 +551,7 @@ public class Client {
 				else {	// time == "night"
 					
 					if (role.equals("civilian")) {
-						System.out.println(ANSI_YELLOW + "Just wait and go to sleep, the werewolves are discussing their target..." + ANSI_RESET);
+						System.out.println(ANSI_YELLOW + " Just wait and go to sleep, the werewolves are discussing their target..." + ANSI_RESET);
 						if (kpuId == playerId){
 							calculateWerewolfVote();
 							readResponse(); //read ok
@@ -538,7 +568,7 @@ public class Client {
 					}
 				}
 			}
-			else if (method.equals("game_over")) {
+			else if (method.equals("game_over")) { //nanti hapus ya zul
 				gameOver = true;
 				System.out.println(ANSI_YELLOW + "Game Over. Winner: " + jsonResponse.getString("winner") + ANSI_RESET);
 				return true;
@@ -665,11 +695,13 @@ public class Client {
 	    while (!checkTimeout.isTimeout() && ((counterAccepted < playersActive()/2) && (counterRejected < playersActive()/2))){
 		    if (messageQueue[0].size() > 0) {
 		    	String response = messageQueue[0].remove(0).toString();
-		    	System.out.println(ANSI_PURPLE + "Receive response from other players: " + response + ANSI_RESET);
+		    	
+		    	System.out.print("");
 
 		    	try {
 		    		jsonResponse = new JSONObject (response);
 		    		if(jsonResponse.has("status")) {
+		    			System.out.println(ANSI_PURPLE + "Receive response from other players: " + response + ANSI_RESET);
 			    		if (jsonResponse.getString("status").equals("ok")){
 			    			counterAccepted++;
 			    		} else {
@@ -1082,7 +1114,7 @@ public class Client {
 				
 				try {
 					JSONObject vote = new JSONObject((String) messageQueue[0].remove(0));	
-					 System.out.println(ANSI_PURPLE + "Receive to all other players: " + vote + ANSI_RESET);
+					 System.out.println(ANSI_PURPLE + "Receive from other player: " + vote + ANSI_RESET);
 
 					String method = vote.getString("method");
 					if (method.equals("vote_civilian")) {

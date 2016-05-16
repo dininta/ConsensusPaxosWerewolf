@@ -38,6 +38,7 @@ public class ServerThread extends Thread {
 	protected String response;
     public boolean changePhase = false;
     public int lastKilled;
+    public boolean gameOver = false;
 
     protected int player_id;
     protected String username;
@@ -243,6 +244,11 @@ public class ServerThread extends Thread {
     //response for method list client
     public void listClient(){
         try{
+            int isGameOver = isGameOver();
+            if (isGameOver == 1 || isGameOver == 2){
+                gameOver(isGameOver);
+                return;
+            }
             //mengembalikan list of clients
             jsonResponse = new JSONObject();
             JSONArray list = new JSONArray();
@@ -368,6 +374,10 @@ public class ServerThread extends Thread {
                 jsonResponse.put("description", "");
                 System.out.println(ANSI_GREEN + "Sending response to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
                 out.println(jsonResponse.toString());
+                
+                if(jsonRequest.getInt("player_killed") == Server.kpuId)
+                    Server.kpuId = changeNextKpu();
+
                 for(ServerThread player: Server.clients){
                     player.changePhase = true;
                     player.changePhase();
@@ -410,6 +420,7 @@ public class ServerThread extends Thread {
                 jsonResponse.put("description", "");
                 System.out.println(ANSI_GREEN + "Sending response to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
                 out.println(jsonResponse.toString());
+
                 for(ServerThread player: Server.clients){
                     player.changePhase = true;
                     player.changePhase();
@@ -485,7 +496,20 @@ public class ServerThread extends Thread {
         }
 
         //reset everything
+        gameOver = true;
 
+        boolean finished = false;
+        while (!finished){
+            finished = true;
+            for(ServerThread player : Server.clients){
+                if(player.is_alive==1){
+                    if(player.gameOver==false)
+                        finished = false;
+                }
+            }
+        }
+
+        gameOver = false;
         is_alive = 0;
         isReady = false;
         lastMethod = "";
@@ -513,6 +537,7 @@ public class ServerThread extends Thread {
             jsonResponse.put("days", counter_day);
             jsonResponse.put("description", "");
             jsonResponse.put("last_killed", lastKilled);
+            jsonResponse.put("kpu_id", Server.kpuId);
 
 
             //kirim json
@@ -529,11 +554,7 @@ public class ServerThread extends Thread {
 
     public void vote() {
         //System.out.println("Player " + player_id +" is in vote() isgameover=" + isGameOver());
-        int isGameOver = isGameOver();
-        if (isGameOver == 1 || isGameOver == 2){
-            gameOver(isGameOver);
-            return;
-        }
+        
         try{
             jsonResponse = new JSONObject();
             jsonResponse.put("method", "vote_now");
@@ -651,6 +672,21 @@ public class ServerThread extends Thread {
             else
                 Server.clients.get(i).setRole("civilian");
         }
+    }
+
+    public int changeNextKpu(){
+        int i = Server.clients.size()-1;
+        boolean found = false;
+        while(i>=0 && !found) {
+            if(Server.clients.get(i).is_alive == 0)
+                i--;
+            else
+                found = true;
+        }
+        if(found)
+            return Server.clients.get(i).player_id;
+        else
+            return 0;
     }
 
     ///memilih KPU berdasarkan vote 
