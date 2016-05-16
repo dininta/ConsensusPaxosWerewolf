@@ -17,6 +17,18 @@ import java.util.*;
 import java.net.InetAddress;
 
 public class ServerThread extends Thread {
+
+    //color text
+    public static final String ANSI_RESET = "\u001B[0m";
+    public static final String ANSI_BLACK = "\u001B[30m";
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_BLUE = "\u001B[34m";
+    public static final String ANSI_PURPLE = "\u001B[35m";
+    public static final String ANSI_CYAN = "\u001B[36m";
+    public static final String ANSI_WHITE = "\u001B[37m";
+
     public static final int maxPlayer = 3;
 
 	protected static String dstAddress;
@@ -67,7 +79,7 @@ public class ServerThread extends Thread {
 
             request = in.readLine();
             jsonRequest = new JSONObject(request);
-            System.out.println("Request from player " + player_id + ": " + request);
+            System.out.println(ANSI_BLUE + "Request from player " + player_id + ": " + request + ANSI_RESET);
             
             if(jsonRequest.has("method")) {
                 String method = jsonRequest.getString("method");
@@ -135,15 +147,15 @@ public class ServerThread extends Thread {
     public void processStatus(String status) {
         if(status.equals("ok")) {
             if (lastMethod.equals("sendChoosenKpu")) {
-                System.out.println("Response from player " + player_id + ": " + jsonRequest.toString());
+                System.out.println(ANSI_BLUE  + "Response from player " + player_id + ": " + jsonRequest.toString() + ANSI_RESET);
                 vote();
             }
             if (lastMethod.equals("changePhase")) {
-                System.out.println("Response from player " + player_id + ": " + jsonRequest.toString());
+                System.out.println(ANSI_BLUE  + "Response from player " + player_id + ": " + jsonRequest.toString() + ANSI_RESET);
                 //vote();
             }
             else
-                System.out.println("Response from player " + player_id + ": " + jsonRequest.toString());
+                System.out.println(ANSI_BLUE  +  "Response from player " + player_id + ": " + jsonRequest.toString() + ANSI_RESET);
         }
         else if(status.equals("fail")) {
             if(lastMethod.equals("start"))
@@ -185,7 +197,7 @@ public class ServerThread extends Thread {
 
 
                     //kirim response
-                    System.out.println("Sending response to player " + player_id + ": " + jsonResponse.toString());
+                    System.out.println(ANSI_GREEN + "Sending response to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
                     out.println(jsonResponse.toString());
 
 
@@ -210,7 +222,7 @@ public class ServerThread extends Thread {
             jsonResponse.put("description", "waiting for other player to start");
 
             //kirim response
-            System.out.println("Sending response to player " + player_id + ": " + jsonResponse.toString());
+            System.out.println(ANSI_GREEN + "Sending response to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
             out.println(jsonResponse.toString());
 
             //set isReady dan cek apakah semua player sudah ready
@@ -250,7 +262,7 @@ public class ServerThread extends Thread {
             jsonResponse.put("status", "ok");
             jsonResponse.put("clients", list);
             jsonResponse.put("description", "list of clients retrieved");
-            System.out.println("Sending response to player " + player_id + ": " + jsonResponse.toString());
+            System.out.println(ANSI_GREEN + "Sending response to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
             out.println(jsonResponse.toString());
 
             if (lastMethod.equals("changePhase") && current_time.equals("night"))
@@ -288,16 +300,12 @@ public class ServerThread extends Thread {
             
 
             //kirim response
-            System.out.println("Sending response to player " + player_id + ": " + jsonResponse.toString());
+            System.out.println(ANSI_GREEN + "Sending response to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
             out.println(jsonResponse.toString());
 
             //baca kembalian dari client
             lastMethod = "start";
-            // request = in.readLine();
-            // jsonRequest = new JSONObject(request);
-            // processStatus("start");
 
-            // out.println(jsonResponse.toString());
         } catch (org.json.JSONException e) {
             sendErrorResponse();
         } 
@@ -318,7 +326,7 @@ public class ServerThread extends Thread {
             jsonResponse.put("status", "ok");
             jsonResponse.put("description", "");
             
-            System.out.println("Sending response to player " + player_id + ": " + jsonResponse.toString());
+            System.out.println(ANSI_GREEN + "Sending response to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
             out.println(jsonResponse.toString());
 
             //jangan lupa diganti isAlive
@@ -358,7 +366,7 @@ public class ServerThread extends Thread {
                 jsonResponse = new JSONObject();
                 jsonResponse.put("status", "ok");
                 jsonResponse.put("description", "");
-                System.out.println("Sending response to player " + player_id + ": " + jsonResponse.toString());
+                System.out.println(ANSI_GREEN + "Sending response to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
                 out.println(jsonResponse.toString());
                 for(ServerThread player: Server.clients){
                     player.changePhase = true;
@@ -369,7 +377,7 @@ public class ServerThread extends Thread {
                 jsonResponse = new JSONObject();
                 jsonResponse.put("status", "ok");
                 jsonResponse.put("description", "");
-                System.out.println("Sending response to player " + player_id + ": " + jsonResponse.toString());
+                System.out.println(ANSI_GREEN + "Sending response to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
                 out.println(jsonResponse.toString());
                 for(ServerThread player: Server.clients){
                     if(player.getAlive()==0)
@@ -400,7 +408,7 @@ public class ServerThread extends Thread {
                 jsonResponse = new JSONObject();
                 jsonResponse.put("status", "ok");
                 jsonResponse.put("description", "");
-                System.out.println("Sending response to player " + player_id + ": " + jsonResponse.toString());
+                System.out.println(ANSI_GREEN + "Sending response to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
                 out.println(jsonResponse.toString());
                 for(ServerThread player: Server.clients){
                     player.changePhase = true;
@@ -413,7 +421,7 @@ public class ServerThread extends Thread {
                 jsonResponse = new JSONObject();
                 jsonResponse.put("status", "ok");
                 jsonResponse.put("description", "");
-                System.out.println("Sending response to player " + player_id + ": " + jsonResponse.toString());
+                System.out.println(ANSI_GREEN + "Sending response to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
                 out.println(jsonResponse.toString());
                 for(int i=0; i<Server.clients.size(); i++){
                     if(Server.clients.get(i).is_alive==0)
@@ -468,7 +476,7 @@ public class ServerThread extends Thread {
             jsonResponse.put("description", "The game is over!!!, the winner is the " + winner_name);
 
             //kirim json
-            System.out.println("Sending response to player " + player_id + ": " + jsonResponse.toString());
+            System.out.println(ANSI_GREEN + "Sending response to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
             out.println(jsonResponse.toString());
 
             lastMethod = "gameOver";
@@ -508,7 +516,7 @@ public class ServerThread extends Thread {
 
 
             //kirim json
-            System.out.println("Sending order to player " + player_id + ": " + jsonResponse.toString());
+            System.out.println(ANSI_GREEN + "Sending order to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
             out.println(jsonResponse.toString());
 
             lastMethod = "changePhase";
@@ -532,7 +540,7 @@ public class ServerThread extends Thread {
             jsonResponse.put("phase", current_time);
 
             //kirim json
-            System.out.println("Sending order to player " + player_id + ": " + jsonResponse.toString());
+            System.out.println(ANSI_GREEN + "Sending order to player " + player_id + ": " + jsonResponse.toString()+ ANSI_RESET);
             out.println(jsonResponse.toString());
 
             // if (player_id != Server.kpuId){
@@ -550,7 +558,7 @@ public class ServerThread extends Thread {
             jsonResponse = new JSONObject();
             jsonResponse.put("status", "ok");
             //kirim response
-            System.out.println("Sending response to player " + player_id + ": " + jsonResponse.toString());
+            System.out.println(ANSI_GREEN + "Sending response to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
             out.println(jsonResponse.toString());
             is_alive = 0;
         } catch (org.json.JSONException e) {
@@ -566,7 +574,7 @@ public class ServerThread extends Thread {
             jsonResponse.put("method", "kpu_selected");
             jsonResponse.put("kpu_id", Server.kpuId);
             
-            System.out.println("Sending order to player " + player_id + ": " + jsonResponse.toString());
+            System.out.println(ANSI_GREEN + "Sending order to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
             //kirim response
             out.println(jsonResponse.toString());
 
@@ -585,7 +593,7 @@ public class ServerThread extends Thread {
             jsonResponse.put("description", desc);
 
             //kirim response
-            System.out.println("Sending response to player " + player_id + ": " + jsonResponse.toString());
+            System.out.println(ANSI_RED + "Sending response to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
             out.println(jsonResponse.toString());
         } catch (org.json.JSONException e) {
             sendErrorResponse();
@@ -600,7 +608,7 @@ public class ServerThread extends Thread {
             jsonResponse.put("description", "wrong request");
 
             //kirim response
-            System.out.println("Sending response to player " + player_id + ": " + jsonResponse.toString());
+            System.out.println(ANSI_RED + "Sending response to player " + player_id + ": " + jsonResponse.toString() + ANSI_RESET);
             out.println(jsonResponse.toString());
         } catch (org.json.JSONException e) {}
     }
