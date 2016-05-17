@@ -73,6 +73,8 @@ public class Client {
     protected int[] previousProposal = {0, 0};
     protected int kpuPort;
     protected InetAddress kpuAddress;
+    protected final double randThreshold = 0.85; // minimal 1.1 buat reliable:)
+    private Random random;
 
     // variables
     private JSONObject jsonRequest; //new
@@ -107,6 +109,7 @@ public class Client {
 			datagramSocket = new DatagramSocket();
 			listenSocket = new DatagramSocket(udpPort);
 			messageQueue[0] = new ArrayList<String>();
+			random = new Random();
 
 			// TCP Socket
 			dstAddress = ip;
@@ -380,7 +383,9 @@ public class Client {
 			System.out.println(ANSI_YELLOW + "isAlive: " + isAlive + ANSI_RESET);
 			if (!isAlive) {
 				System.out.println(ANSI_YELLOW + "You're dead" + ANSI_RESET);
-				break;
+				//break;
+				reset();
+				return;
 			}
 			else {
 				getListClient(true);
@@ -398,16 +403,19 @@ public class Client {
 				
 				// change phase
 				changePhase();
+				System.out.println(ANSI_YELLOW + "isAlive: " + isAlive + ANSI_RESET);
+				if (!isAlive) {
+					System.out.println(ANSI_YELLOW + "You're dead" + ANSI_RESET);
+					//break;
+					reset();
+					return;
+				}
 
 				getListClient(true);
 				// check if game over
 				if (gameOver) {
 					reset();
 					return;
-				}
-				if (!isAlive) {
-					System.out.println(ANSI_YELLOW + "You're dead" + ANSI_RESET);
-					break;
 				}
 			}
 		}
@@ -655,7 +663,10 @@ public class Client {
 		byte[] sendData = jsonRequest.toString().getBytes();
 		try {
 			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, kpuAddress, kpuPort);
-			datagramSocket.send(sendPacket);
+			double rand = random.nextDouble();
+			if (rand < 2) {
+				datagramSocket.send(sendPacket);
+			}
 		} catch (UnknownHostException e){
 		} catch (IOException e){}
 	}
@@ -682,7 +693,10 @@ public class Client {
 			if (players.get(i).playerId != playerId && players.get(i).isAlive == 1) {
 				try {
 					DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(players.get(i).address), players.get(i).port);
-					datagramSocket.send(sendPacket);
+					double rand = random.nextDouble();
+					if (rand < randThreshold) {
+						datagramSocket.send(sendPacket);
+					}
 				} catch (UnknownHostException e){
 				} catch (IOException e){}
 			}
@@ -765,7 +779,10 @@ public class Client {
 			if (players.get(i).playerId != playerId && players.get(i).isAlive == 1) {
 				try {
 					DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(players.get(i).address), players.get(i).port);
-					datagramSocket.send(sendPacket);
+					double rand = random.nextDouble();
+					if (rand < randThreshold) {
+						datagramSocket.send(sendPacket);
+					}
 				} catch (UnknownHostException e){
 				} catch (IOException e){}
 			}
@@ -810,7 +827,10 @@ public class Client {
 		byte[] sendData = jsonRequest.toString().getBytes();
 		try {
 			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, kpuAddress, kpuPort);
-			datagramSocket.send(sendPacket);
+			double rand = random.nextDouble();
+			if (rand < 2) {
+				datagramSocket.send(sendPacket);
+			}
 		} catch (UnknownHostException e){
 		} catch (IOException e){}
 	}
@@ -866,9 +886,12 @@ public class Client {
 				    }
 					byte[] sendData = jsonRequest.toString().getBytes();
 					try {
-						 System.out.println(ANSI_CYAN + "Sending to proposer: " + jsonRequest.toString() + ANSI_RESET);
+						System.out.println(ANSI_CYAN + "Sending to proposer: " + jsonRequest.toString() + ANSI_RESET);
 						DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, proposerAddress, proposerPort);
-						datagramSocket.send(sendPacket);
+						double rand = random.nextDouble();
+						if (rand < 2) {
+							datagramSocket.send(sendPacket);
+						}
 					} catch (UnknownHostException e){
 					} catch (IOException e){}
 
@@ -916,9 +939,12 @@ public class Client {
 				    }
 					byte[] sendData = jsonRequest.toString().getBytes();
 					try {
-						 System.out.println(ANSI_CYAN + "Sending to proposer: " + jsonRequest.toString() + ANSI_RESET);
+						System.out.println(ANSI_CYAN + "Sending to proposer: " + jsonRequest.toString() + ANSI_RESET);
 						DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, proposerAddress, proposerPort);
-						datagramSocket.send(sendPacket);
+						double rand = random.nextDouble();
+						if (rand < 2) {
+							datagramSocket.send(sendPacket);
+						}
 					} catch (UnknownHostException e){
 					} catch (IOException e){}
 
@@ -970,7 +996,10 @@ public class Client {
 							if (players.get(i).playerId != playerId && players.get(i).isAlive == 1) {
 								try {
 									DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(players.get(i).address), players.get(i).port);
-									datagramSocket.send(sendPacket);
+									double rand = random.nextDouble();
+									if (rand < 2) {
+										datagramSocket.send(sendPacket);
+									}
 								} catch (UnknownHostException e){
 								} catch (IOException e){}
 							}
@@ -1023,7 +1052,10 @@ public class Client {
 						byte[] sendData = jsonRequest.toString().getBytes();
 						try {
 							DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(vote.getString("udp_address")), vote.getInt("udp_port"));
-							datagramSocket.send(sendPacket);
+							double rand = random.nextDouble();
+							if (rand < 2) {
+								datagramSocket.send(sendPacket);
+							}
 						} catch (UnknownHostException e){
 						} catch (IOException e){}
 					}
@@ -1132,7 +1164,10 @@ public class Client {
 
 						try {
 							DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(vote.getString("udp_address")), vote.getInt("udp_port"));
-							datagramSocket.send(sendPacket);
+							double rand = random.nextDouble();
+							if (rand < 2) {
+								datagramSocket.send(sendPacket);
+							}
 						} catch (UnknownHostException e){
 						} catch (IOException e){}
 					}
@@ -1198,7 +1233,10 @@ public class Client {
             byte[] sendData = jsonResponse.toString().getBytes();
 			try {
 				DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, port);
-				datagramSocket.send(sendPacket);
+				double rand = random.nextDouble();
+				if (rand < 2) {
+					datagramSocket.send(sendPacket);
+				}
 			} catch (UnknownHostException e){
 			} catch (IOException e){}
         } catch (org.json.JSONException e) { }
