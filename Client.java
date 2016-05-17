@@ -73,7 +73,7 @@ public class Client {
     protected int[] previousProposal = {0, 0};
     protected int kpuPort;
     protected InetAddress kpuAddress;
-    protected final double randThreshold = 0.85; // minimal 1.1 buat reliable:)
+    protected final double randThreshold = 2; // minimal 1.1 buat reliable:)
     private Random random;
 
     // variables
@@ -422,7 +422,7 @@ public class Client {
 			
 	}
 
-	public void reset() {
+	public void reset() { // before exit
 		username = "";
     	isAlive = false;
     	playerId = 0;
@@ -430,7 +430,7 @@ public class Client {
     	players.clear();
 		role = "";
 		time = "";
-		gameOver = false;
+		gameOver = true;
 	}
 
 	public void changePhase() {
@@ -1271,6 +1271,9 @@ public class Client {
 			}
 
 			client.processCommand(input);
+			if (client.gameOver){
+				break;
+			};
 			System.out.print(ANSI_YELLOW + "Command: " + ANSI_RESET);
 			input = sc.nextLine();
 
